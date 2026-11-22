@@ -108,7 +108,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
   const handleLoadExample = () => {
     setForm(BRM_EXAMPLE_STATE);
     setMissingFields([]);
-    onNotify('info', 'Exemplo carregado', 'Dados de TASK1520305 preenchidos para conferência.');
+    onNotify('info', 'Exemplo carregado', 'Dados fictícios de TASK0000456 preenchidos para conferência.');
   };
 
   return (
@@ -169,7 +169,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
               <input
                 id="brm-nome-solicitante"
                 type="text"
-                placeholder="Ex.: Thiago Andrade Da Silva"
+                placeholder="Ex.: Fulano de Tal Exemplo"
                 value={form.nomeSolicitante}
                 onChange={(e) => updateField('nomeSolicitante', e.target.value)}
                 className={inputClass('nomeSolicitante')}
@@ -190,7 +190,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
                 <input
                   id="brm-numero-chamado"
                   type="text"
-                  placeholder="TASK1520305"
+                  placeholder="TASK0000456"
                   value={form.numeroChamado}
                   onChange={(e) => updateField('numeroChamado', e.target.value)}
                   className={`${inputClass('numeroChamado')} font-mono`}
@@ -210,7 +210,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
                 <input
                   id="brm-usuario-sap"
                   type="text"
-                  placeholder="TASILVA07"
+                  placeholder="FULANO01"
                   value={form.usuarioSap}
                   onChange={(e) => updateField('usuarioSap', e.target.value)}
                   className={`${inputClass('usuarioSap')} font-mono`}
@@ -273,7 +273,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
               <textarea
                 id="brm-objetos"
                 rows={6}
-                placeholder={`Q_INSPPNT\nACTVT: 03\nWERKS: 5001`}
+                placeholder={`Z_OBJ_EXEMPLO\nACTVT: 03\nWERKS: 0001`}
                 value={form.objetoNivelOrg}
                 onChange={(e) => updateField('objetoNivelOrg', e.target.value)}
                 className="w-full rounded border border-[#CBD5E1] px-3 py-2 text-xs font-mono leading-relaxed text-[#1E293B] focus:border-[#0F62FE] focus:outline-none focus:ring-2 focus:ring-[#0F62FE]/20"
@@ -291,7 +291,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
                 <input
                   id="brm-perfil-mestre"
                   type="text"
-                  placeholder="ZF:QM_CQ_PA_SR_ANL_001"
+                  placeholder="Z:EXEMPLO_MESTRE_01"
                   value={form.perfilMestre}
                   onChange={(e) => updateField('perfilMestre', e.target.value)}
                   className={`${inputClass('perfilMestre')} font-mono`}
@@ -313,7 +313,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
                 <textarea
                   id="brm-perfil-derivado"
                   rows={2}
-                  placeholder="ZF:QM_CQ_PA_SR_ANL_001_0001"
+                  placeholder="Z:EXEMPLO_DERIVADO_01"
                   value={form.perfilDerivado}
                   onChange={(e) => updateField('perfilDerivado', e.target.value)}
                   className="w-full rounded border border-[#CBD5E1] px-3 py-2 text-sm font-mono text-[#1E293B] focus:border-[#0F62FE] focus:outline-none focus:ring-2 focus:ring-[#0F62FE]/20"

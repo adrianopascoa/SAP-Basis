@@ -68,9 +68,9 @@ test('Template 1, 3, 4, 5, 7 tecnico, and 12 format fields and defaults accurate
     now: morning,
   });
   assert.match(t1, /^Bom dia!/);
-  assert.match(t1, /dono\(a\) do perfil: CARLOS\.MENDES/);
-  assert.match(t1, /Donos do risco: RODRIGO\.ALMEIDA \/ ANA\.SOUZA/);
-  assert.match(t1, /Perfil: ZF:FI_GL_PL_ANL_001/);
+  assert.match(t1, /dono\(a\) do perfil: DONO\.EXEMPLO/);
+  assert.match(t1, /Donos do risco: RISCO1\.EXEMPLO \/ RISCO2\.EXEMPLO/);
+  assert.match(t1, /Perfil: Z:EXEMPLO_PERFIL_01/);
 
   const t3 = generateGeneralLog('falta-aprovacao', DEFAULT_GENERAL_LOG_VALUES, DEFAULT_SIGNATURE, {
     greetingOverride: 'Boa noite',
@@ -98,11 +98,11 @@ test('Template 1, 3, 4, 5, 7 tecnico, and 12 format fields and defaults accurate
 
   const t5At = generateGeneralLog(
     'encerramento-falta-retorno',
-    { ...DEFAULT_GENERAL_LOG_VALUES, solicitante: '@mariana.oliveira' },
+    { ...DEFAULT_GENERAL_LOG_VALUES, solicitante: '@usuario.exemplo' },
     DEFAULT_SIGNATURE,
     { now: morning }
   );
-  assert.match(t5At, /Prezado \(a\) @mariana\.oliveira/);
+  assert.match(t5At, /Prezado \(a\) @usuario\.exemplo/);
 
   const t7Tech = generateGeneralLog(
     'tecnico-perfil-aprovador',
@@ -110,13 +110,16 @@ test('Template 1, 3, 4, 5, 7 tecnico, and 12 format fields and defaults accurate
     DEFAULT_SIGNATURE,
     { now: morning }
   );
-  assert.match(t7Tech, /^Log técnico\nSolicitação: RITM0482910/);
-  assert.match(t7Tech, /Perfil de aprovador – ZF:GRC_OWNER_FI/);
+  assert.match(t7Tech, /^Log técnico\nSolicitação: RITM0000123/);
+  assert.match(t7Tech, /Perfil de aprovador – Z:EXEMPLO_APROVADOR_01/);
 
   const t13 = generateGeneralLog('troca-dono-perfil', EXAMPLE_GENERAL_LOG_VALUES, DEFAULT_SIGNATURE, {
     now: morning,
   });
-  assert.match(t13, /o dono do perfil ZF:FI_GL_PL_ANL_001 \(JOAO\.SILVA\) encontra-se desligado/);
+  assert.match(
+    t13,
+    /o dono do perfil Z:EXEMPLO_PERFIL_01 \(EXEMPLO\.ANTERIOR\) encontra-se desligado/
+  );
 
   const t14Default = generateGeneralLog(
     'aprovadores-arm',

@@ -132,7 +132,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
   const handleLoadExample = () => {
     setForm(ARM_EXAMPLE_STATE);
     setMissingFields([]);
-    onNotify('info', 'Exemplo carregado', 'Dados de exemplo preenchidos para teste rápido.');
+    onNotify('info', 'Exemplo carregado', 'Dados fictícios preenchidos para teste rápido.');
   };
 
   return (
@@ -363,7 +363,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
               <input
                 id="arm-usuario-ad"
                 type="text"
-                placeholder="ADRIANO.PASCOA"
+                placeholder="JOAO.EXEMPLO"
                 value={form.usuarioAd}
                 onChange={(e) => updateField('usuarioAd', e.target.value)}
                 className={inputClass('usuarioAd')}
@@ -474,7 +474,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                 <input
                   id="arm-chamado"
                   type="text"
-                  placeholder="Ex.: RITM0482910"
+                  placeholder="Ex.: RITM0000123"
                   value={form.chamado}
                   onChange={(e) => updateField('chamado', e.target.value)}
                   className={`${inputClass('chamado')} font-mono`}
@@ -607,7 +607,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                       <input
                         id="arm-usuario-copia"
                         type="text"
-                        placeholder="Ex.: JSILVA04"
+                        placeholder="Ex.: USRCOPIA01"
                         value={form.usuarioCopiaSap}
                         onChange={(e) => updateField('usuarioCopiaSap', e.target.value)}
                         className={`${inputClass('usuarioCopiaSap')} font-mono`}
@@ -624,7 +624,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                       <input
                         id="arm-usuario-sap"
                         type="text"
-                        placeholder="Ex.: RFERREIRA12"
+                        placeholder="Ex.: USREXEMPLO01"
                         value={form.usuarioSap}
                         onChange={(e) => updateField('usuarioSap', e.target.value)}
                         className={`${inputClass('usuarioSap')} font-mono`}
@@ -754,7 +754,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                       <input
                         id="arm-perfil"
                         type="text"
-                        placeholder="Ex.: ZF:FI_GL_PL_ANL_001"
+                        placeholder="Ex.: Z:EXEMPLO_PERFIL_01"
                         value={form.perfil}
                         onChange={(e) => updateField('perfil', e.target.value)}
                         className={`${inputClass('perfil')} font-mono`}

@@ -384,7 +384,7 @@ export const ArmMultiploView: React.FC<ExtraViewBaseProps> = ({
                 type="text"
                 value={form.chamado}
                 onChange={(e) => setForm({ ...form, chamado: e.target.value })}
-                placeholder="RITM0482910"
+                placeholder="RITM0000123"
                 className="w-full h-9 rounded border border-[#CBD5E1] px-3 text-sm font-mono focus:border-[#0F62FE] focus:outline-none"
               />
             </div>
@@ -679,7 +679,7 @@ export const EncerramentoStandaloneView: React.FC<EncerramentoViewProps> = ({
                 type="text"
                 value={form.chamado}
                 onChange={(e) => setForm({ ...form, chamado: e.target.value })}
-                placeholder="TASK1520305"
+                placeholder="TASK0000456"
                 className="w-full h-9 rounded border border-[#CBD5E1] px-3 text-sm font-mono focus:border-[#0F62FE] focus:outline-none"
               />
             </div>

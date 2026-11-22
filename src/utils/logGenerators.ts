@@ -67,20 +67,20 @@ export const DEFAULT_ARM_STATE: ArmFormState = {
 export const ARM_EXAMPLE_STATE: ArmFormState = {
   ...DEFAULT_ARM_STATE,
   requestType: 'Criação de usuário',
-  abertoPor: 'Mariana Oliveira Costa',
-  cargoSolicitante: 'Coordenadora Financeira',
-  deptSolicitante: 'Controladoria',
-  chamado: 'RITM0482910',
-  grcRequestNumber: '1234',
-  usuarioCopiaSap: 'JSILVA04',
-  usuarioSap: 'RFERREIRA12',
-  nomeCompleto: 'Rafael Ferreira Santos',
-  cargo: 'Analista Contábil Pleno',
-  departamento: 'Contabilidade Fiscal',
-  perfil: 'ZF:FI_GL_PL_ANL_001',
+  abertoPor: 'Maria Exemplo',
+  cargoSolicitante: 'Coordenador(a) Exemplo',
+  deptSolicitante: 'Área Exemplo',
+  chamado: 'RITM0000123',
+  grcRequestNumber: '9999',
+  usuarioCopiaSap: 'USRCOPIA01',
+  usuarioSap: 'USREXEMPLO01',
+  nomeCompleto: 'João da Silva Exemplo',
+  cargo: 'Analista Exemplo',
+  departamento: 'Departamento Exemplo',
+  perfil: 'Z:EXEMPLO_PERFIL_01',
   ambiente: 'ECP/EQ1/ED1/ACP/ACQ/ACD',
-  usuarioAd: 'ADRIANO.PASCOA@PRATIKA.BR',
-  adDomain: 'PRATIKA.BR',
+  usuarioAd: 'JOAO.EXEMPLO@EXEMPLO.COM',
+  adDomain: DEFAULT_ARM_STATE.adDomain,
 };
 
 export const DEFAULT_BRM_STATE: BrmFormState = {
@@ -99,28 +99,22 @@ export const DEFAULT_BRM_STATE: BrmFormState = {
 };
 
 export const BRM_EXAMPLE_STATE: BrmFormState = {
-  nomeSolicitante: 'Thiago Andrade Da Silva',
-  numeroChamado: 'TASK1520305',
-  usuarioSap: 'TASILVA07',
+  nomeSolicitante: 'Fulano de Tal Exemplo',
+  numeroChamado: 'TASK0000456',
+  usuarioSap: 'FULANO01',
   tipo: 'Modificar função derivada',
-  transacoesUtilizadas: 'QA32, QE51N',
+  transacoesUtilizadas: 'SE01, SU01',
   transacoes: 'SE16N',
   alteracaoSomenteNivelOrg: true,
-  objetoNivelOrg: `Q_INSPPNT
+  objetoNivelOrg: `Z_OBJ_EXEMPLO
 ACTVT: 03
-ARBPL: CQ.CP
-QINSPPNTTY: 3
-QMATAUTH: Z00005
-QPRUEFART: Z0104
-WERKS: 5001
-
-S_GUI
-ACTVT: 02`,
-  perfilMestre: 'ZF:QM_CQ_PA_SR_ANL_001',
-  perfilDerivado: 'ZF:QM_CQ_PA_SR_ANL_001_0001',
+BUKRS: 1000
+WERKS: 0001`,
+  perfilMestre: 'Z:EXEMPLO_MESTRE_01',
+  perfilDerivado: 'Z:EXEMPLO_DERIVADO_01',
   ambiente: '07) SAP ERP Qualidade',
   detalhesServiceNow:
-    'Solicitação TASK1520305 — Liberar consulta SE16N e ajustar nível organizacional centro 5001 / CQ.CP para usuário TASILVA07 na função derivada ZF:QM_CQ_PA_SR_ANL_001_0001.',
+    'Solicitação TASK0000456 — Liberar consulta SE16N e ajustar nível organizacional centro 0001 para usuário FULANO01 na função derivada Z:EXEMPLO_DERIVADO_01.',
 };
 
 function clean(value: string): string {

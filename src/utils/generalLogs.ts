@@ -51,21 +51,21 @@ export const DEFAULT_GENERAL_LOG_VALUES: GeneralLogValues = {
 };
 
 export const EXAMPLE_GENERAL_LOG_VALUES: GeneralLogValues = {
-  solicitante: 'Mariana Oliveira',
-  donoPerfil: 'CARLOS.MENDES',
-  donosRisco: 'RODRIGO.ALMEIDA / ANA.SOUZA',
-  perfil: 'ZF:FI_GL_PL_ANL_001',
+  solicitante: 'Maria Exemplo',
+  donoPerfil: 'DONO.EXEMPLO',
+  donosRisco: 'RISCO1.EXEMPLO / RISCO2.EXEMPLO',
+  perfil: 'Z:EXEMPLO_PERFIL_01',
   data: '25.11.2026',
-  usuario: 'RFERREIRA12',
+  usuario: 'USREXEMPLO01',
   senha: getDefaultPassword(),
-  solicitacao: 'RITM0482910',
-  colaborador: 'Rafael Ferreira Santos',
-  novoPerfil: 'ZF:GRC_APROV_CONTAB_001',
-  perfilAprovador: 'ZF:GRC_OWNER_FI',
-  perfis: 'ZF:MM_COMP_ANL_001, ZF:MM_COMP_ANL_002',
-  donoAnterior: 'JOAO.SILVA',
-  aprovador1: 'CARLOS.MENDES',
-  aprovador2: 'MARIA.SILVA, JOAO.SOUZA, ANA.COSTA',
+  solicitacao: 'RITM0000123',
+  colaborador: 'João da Silva Exemplo',
+  novoPerfil: 'Z:EXEMPLO_NOVO_01',
+  perfilAprovador: 'Z:EXEMPLO_APROVADOR_01',
+  perfis: 'Z:EXEMPLO_PERFIL_01, Z:EXEMPLO_PERFIL_02',
+  donoAnterior: 'EXEMPLO.ANTERIOR',
+  aprovador1: 'APROVADOR1.EXEMPLO',
+  aprovador2: 'APROVADOR2.EXEMPLO, APROVADOR3.EXEMPLO',
   dataLimiteAprovacao: getDatePlusDays(8),
 };
 
@@ -87,9 +87,9 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
     description: 'Notifica envio de alterações configuradas para aprovação via GRC AC.',
     hasGreeting: true,
     fields: [
-      { key: 'donoPerfil', label: 'Dono(a) do perfil', placeholder: 'Ex.: CARLOS.MENDES', isMono: true },
-      { key: 'donosRisco', label: 'Donos do risco', placeholder: 'Ex.: RODRIGO.ALMEIDA / ANA.SOUZA' },
-      { key: 'perfil', label: 'Perfil', placeholder: 'Ex.: ZF:FI_GL_PL_ANL_001', isMono: true },
+      { key: 'donoPerfil', label: 'Dono(a) do perfil', placeholder: 'Ex.: DONO.EXEMPLO', isMono: true },
+      { key: 'donosRisco', label: 'Donos do risco', placeholder: 'Ex.: RISCO1.EXEMPLO / RISCO2.EXEMPLO' },
+      { key: 'perfil', label: 'Perfil', placeholder: 'Ex.: Z:EXEMPLO_PERFIL_01', isMono: true },
     ],
   },
   {
@@ -116,7 +116,7 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
     description: 'Envio de senha temporária inicial com validade de três dias.',
     hasGreeting: true,
     fields: [
-      { key: 'usuario', label: 'Usuário', placeholder: 'Ex.: RFERREIRA12', isMono: true },
+      { key: 'usuario', label: 'Usuário', placeholder: 'Ex.: USREXEMPLO01', isMono: true },
       { key: 'senha', label: 'Senha', placeholder: getDefaultPassword(), isMono: true },
     ],
   },
@@ -126,7 +126,7 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
     description: 'Encerramento após 3 cobranças diárias sem retorno ou autorização.',
     hasGreeting: true,
     fields: [
-      { key: 'solicitante', label: 'Usuário / Solicitante (@)', placeholder: 'Ex.: mariana.oliveira' },
+      { key: 'solicitante', label: 'Usuário / Solicitante (@)', placeholder: 'Ex.: usuario.exemplo' },
     ],
   },
   {
@@ -151,10 +151,10 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
     description: 'Registro técnico para validação de novo perfil e perfil de aprovador.',
     hasGreeting: false,
     fields: [
-      { key: 'solicitacao', label: 'Solicitação', placeholder: 'Ex.: RITM0482910', isMono: true },
+      { key: 'solicitacao', label: 'Solicitação', placeholder: 'Ex.: RITM0000123', isMono: true },
       { key: 'colaborador', label: 'Colaborador(a)', placeholder: 'Nome do colaborador' },
-      { key: 'novoPerfil', label: 'Novo perfil', placeholder: 'Ex.: ZF:GRC_APROV_001', isMono: true },
-      { key: 'perfilAprovador', label: 'Perfil de aprovador', placeholder: 'Ex.: ZF:GRC_OWNER_FI', isMono: true },
+      { key: 'novoPerfil', label: 'Novo perfil', placeholder: 'Ex.: Z:EXEMPLO_NOVO_01', isMono: true },
+      { key: 'perfilAprovador', label: 'Perfil de aprovador', placeholder: 'Ex.: Z:EXEMPLO_APROVADOR_01', isMono: true },
     ],
   },
   {
@@ -199,8 +199,8 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
     hasGreeting: true,
     fields: [
       { key: 'solicitante', label: 'Solicitante', placeholder: 'Nome do solicitante' },
-      { key: 'perfil', label: 'Perfil', placeholder: 'Ex.: ZF:FI_GL_PL_ANL_001', isMono: true },
-      { key: 'donoAnterior', label: 'Dono desligado', placeholder: 'Ex.: JOAO.SILVA', isMono: true },
+      { key: 'perfil', label: 'Perfil', placeholder: 'Ex.: Z:EXEMPLO_PERFIL_01', isMono: true },
+      { key: 'donoAnterior', label: 'Dono desligado', placeholder: 'Ex.: EXEMPLO.ANTERIOR', isMono: true },
     ],
   },
   {
