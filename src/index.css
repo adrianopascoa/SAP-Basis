@@ -1,0 +1,138 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Plus Jakarta Sans", system-ui, sans-serif;
+  --font-sans: "Public Sans", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, Menlo, monospace;
+
+  --color-sap-navy: #003865;
+  --color-sap-deep: #002241;
+  --color-sap-blue: #0F62FE;
+  --color-sap-link: #0070F2;
+  --color-sap-canvas: #F4F6F9;
+  --color-sap-border: #E0E4EC;
+  --color-sap-ink: #1E293B;
+  --color-sap-success: #198038;
+  --color-sap-warning: #B28600;
+  --color-sap-danger: #DA1E28;
+}
+
+@layer base {
+  html {
+    font-family: var(--font-sans);
+  }
+
+  h1, h2, h3, h4, .font-display {
+    font-family: var(--font-display);
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Softened resting state & visible hover effect for buttons and menus */
+:where(
+    button:not(:disabled),
+    select:not(:disabled),
+    header nav a,
+    [role="listbox"] [role="option"]
+  ) {
+  transition:
+    opacity 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    background-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    border-color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    color 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+:where(
+    button:not(:disabled):not([aria-current="page"]):not([aria-pressed="true"]),
+    select:not(:disabled),
+    header nav a,
+    [role="listbox"] [role="option"]
+  ) {
+  opacity: 0.74;
+}
+
+:where(
+    button:not(:disabled),
+    select:not(:disabled),
+    header nav a,
+    [role="listbox"] [role="option"]
+  ):hover,
+:where(
+    button:not(:disabled),
+    select:not(:disabled),
+    header nav a,
+    [role="listbox"] [role="option"]
+  ):focus-visible {
+  opacity: 1;
+}
+
+:where(
+    button:not(:disabled):not([role="option"] button):not([aria-label="Selecionar data"] button):not([data-list-row-btn="true"]),
+    select:not(:disabled),
+    header nav a
+  ):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 14px -4px rgba(0, 56, 101, 0.22);
+}
+
+:where(
+    button:not(:disabled):not([role="option"] button):not([aria-label="Selecionar data"] button):not([data-list-row-btn="true"]),
+    header nav a
+  ):active {
+  transform: translateY(0) scale(0.985);
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.page-transition-enter {
+  animation: pageEnter 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :where(
+      button:not(:disabled),
+      select:not(:disabled),
+      header nav a,
+      [role="listbox"] [role="option"]
+    ):hover,
+  :where(button:not(:disabled), header nav a):active {
+    transform: none;
+  }
+
+  .page-transition-enter {
+    animation: none;
+  }
+}
+
+/* Subtle enterprise scrollbars */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}

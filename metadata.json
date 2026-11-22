@@ -1,0 +1,6 @@
+{
+  "name": "SAP Basis Log Studio",
+  "description": "Gerador corporativo de logs ARM e BRM para analistas SAP Basis (GRC AC, ServiceNow, SNC e manutenção de funções).",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
