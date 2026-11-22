@@ -301,7 +301,7 @@ export default function App() {
               Histórico
             </button>
             <a
-              href="https://extrator-su53.adrianoiuris.workers.dev/"
+              href="https://extrator-su53.vercel.app/"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-[#003865] bg-slate-50 border border-[#CBD5E1] hover:bg-[#EFF5FF] hover:border-[#0F62FE] hover:text-[#0F62FE] rounded whitespace-nowrap shrink-0"
