@@ -38,6 +38,13 @@ export interface CustomGeneralLogTemplate {
   updatedAt: string;
 }
 
+export interface ImportantLinkItem {
+  id: string;
+  label: string;
+  url: string;
+  isCustom?: boolean;
+}
+
 export interface GeneralLogValues {
   solicitante: string;
   donoPerfil: string;

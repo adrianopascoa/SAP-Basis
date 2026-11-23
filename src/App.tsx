@@ -4,13 +4,16 @@ import {
   AppRoute,
   CustomGeneralLogTemplate,
   GeneralLogId,
+  ImportantLinkItem,
   LogHistoryEntry,
 } from './types/sapLogs';
 import { DEFAULT_SIGNATURE } from './utils/logGenerators';
 import {
   parseStoredCustomTemplates,
   parseStoredHistory,
+  parseStoredImportantLinks,
   parseStoredStringArray,
+  sanitizeHttpUrl,
 } from './utils/storageValidation';
 import { HubView } from './components/HubView';
 import { Toast, ToastMessage } from './components/Toast';
@@ -44,6 +47,7 @@ const SIGNATURE_STORAGE_KEY = 'sap_basis_signature_v1';
 const HISTORY_STORAGE_KEY = 'sap_basis_log_history_v1';
 const FAVORITE_GENERAL_LOGS_KEY = 'sap_basis_general_favorites_v1';
 const CUSTOM_GENERAL_LOGS_KEY = 'sap_basis_custom_general_logs_v1';
+const CUSTOM_IMPORTANT_LINKS_KEY = 'sap_basis_custom_important_links_v1';
 
 const PREVIOUS_DEFAULT_SIGNATURE = `Você receberá uma Pesquisa de Satisfação em seu e-mail quando este chamado for encerrado. Sua avaliação é fundamental para que possamos aprimorar nosso atendimento.
 Adriano Pascoa| Application Management Services SAP Basis
@@ -95,6 +99,15 @@ export default function App() {
     }
   );
 
+  const [customImportantLinks, setCustomImportantLinks] = useState<ImportantLinkItem[]>(() => {
+    try {
+      const raw = window.localStorage.getItem(CUSTOM_IMPORTANT_LINKS_KEY);
+      return parseStoredImportantLinks(raw);
+    } catch {
+      return [];
+    }
+  });
+
   const [pendingOpenCreateCustom, setPendingOpenCreateCustom] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
@@ -137,6 +150,17 @@ export default function App() {
       // Ignore storage quota errors
     }
   }, [customGeneralTemplates]);
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(
+        CUSTOM_IMPORTANT_LINKS_KEY,
+        JSON.stringify(customImportantLinks)
+      );
+    } catch {
+      // Ignore storage quota errors
+    }
+  }, [customImportantLinks]);
 
   const notify = useCallback(
     (type: ToastMessage['type'], title: string, description?: string) => {
@@ -199,6 +223,32 @@ export default function App() {
       setFavoriteGeneralIds((prev) => prev.filter((item) => item !== id));
       setSelectedGeneralLogId((prev) => (prev === id ? 'envio-brm-grc' : prev));
       notify('info', 'Modelo removido', 'O modelo personalizado foi excluído.');
+    },
+    [notify]
+  );
+
+  const handleAddImportantLink = useCallback(
+    (draft: { label: string; url: string }) => {
+      const safeUrl = sanitizeHttpUrl(draft.url);
+      const cleanLabel = draft.label.trim();
+      if (!safeUrl || !cleanLabel) return;
+
+      const created: ImportantLinkItem = {
+        id: `custom-link-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+        label: cleanLabel,
+        url: safeUrl,
+        isCustom: true,
+      };
+      setCustomImportantLinks((prev) => [...prev, created]);
+      notify('success', 'Link adicionado', created.label);
+    },
+    [notify]
+  );
+
+  const handleDeleteImportantLink = useCallback(
+    (id: string) => {
+      setCustomImportantLinks((prev) => prev.filter((item) => item.id !== id));
+      notify('info', 'Link removido', 'O link personalizado foi excluído.');
     },
     [notify]
   );
@@ -407,6 +457,9 @@ export default function App() {
                 favoriteGeneralIds={favoriteGeneralIds}
                 customGeneralTemplates={customGeneralTemplates}
                 onToggleFavoriteGeneralLog={handleToggleFavoriteGeneralLog}
+                customImportantLinks={customImportantLinks}
+                onAddImportantLink={handleAddImportantLink}
+                onDeleteImportantLink={handleDeleteImportantLink}
                 recentLogs={history}
                 onCopyLog={handleCopyEntry}
               />

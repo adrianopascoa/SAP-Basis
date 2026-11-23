@@ -1,13 +1,30 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { ArrowRight, ChevronDown, Copy, Plus, RotateCcw, Save, Search, Star, X } from 'lucide-react';
+import React, { Suspense, lazy, useEffect, useRef, useState } from 'react';
+import {
+  ArrowRight,
+  ChevronDown,
+  Copy,
+  ExternalLink,
+  Plus,
+  RotateCcw,
+  Save,
+  Search,
+  Star,
+  Trash2,
+  X,
+} from 'lucide-react';
 import {
   AppRoute,
   CustomGeneralLogTemplate,
   GeneralLogId,
+  ImportantLinkItem,
   LogHistoryEntry,
 } from '../types/sapLogs';
 import { DEFAULT_SIGNATURE } from '../utils/logGenerators';
 import { filterAndSortGeneralTemplates, GENERAL_LOG_TEMPLATES } from '../utils/generalLogs';
+
+const CustomLinkModal = lazy(() =>
+  import('./CustomLinkModal').then((m) => ({ default: m.CustomLinkModal }))
+);
 
 interface HubViewProps {
   signature: string;
@@ -18,6 +35,9 @@ interface HubViewProps {
   favoriteGeneralIds: string[];
   customGeneralTemplates: CustomGeneralLogTemplate[];
   onToggleFavoriteGeneralLog: (templateId: GeneralLogId) => void;
+  customImportantLinks: ImportantLinkItem[];
+  onAddImportantLink: (draft: { label: string; url: string }) => void;
+  onDeleteImportantLink: (id: string) => void;
   recentLogs: LogHistoryEntry[];
   onCopyLog: (entry: LogHistoryEntry) => void;
 }
@@ -47,6 +67,44 @@ const ARM_MODULES: ModuleTile[] = [
   },
 ];
 
+const IMPORTANT_LINKS: ImportantLinkItem[] = [
+  {
+    id: 'repositorio',
+    label: '1) Repositório',
+    url: 'https://onesofttek.sharepoint.com/teams/BRAMSDEDICADO-Hypera/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2FBRAMSDEDICADO%2DHypera%2FShared%20Documents%2FHypera%2FPHYPP01%2FOpera%C3%A7%C3%A3o%2F02%20%2D%20Service%20Delivery%2F04%20%2D%20Acessos&p=true&ct=1657912561542&or=Teams%2DHL&ga=1&share=cgrXPxjVYKDwQrxCHPaEOyWmEgUD4Hgr1F%2DqFHRXXHe%2D3y0h1Q',
+  },
+  {
+    id: 'monitoramento-its',
+    label: '2) Monitoramento ITs',
+    url: 'https://onesofttek-my.sharepoint.com/:f:/g/personal/adriano_pascoa_softtek_com/IgBceaejwuRCSIol_aKRNJ-SAV9DR6mF-Nc06idMzv6IMBM',
+  },
+  {
+    id: 'portal-prd',
+    label: '3) Portal PRD',
+    url: 'https://sapportalprd.hypera.com.br/irj/portal/',
+  },
+  {
+    id: 'rm-emergencial',
+    label: '4) RM emergencial',
+    url: 'https://suporteprd.service-now.com/now/nav/ui/classic/params/target/wizard_view.do%3Fsys_target%3D%26sysparm_wizardAction%3Dsysverb_new%26sysparm_parent%3D8db4a378c611227401b96457a060e0f4%26sysparm_stack%3Dchange_request_list.do',
+  },
+  {
+    id: 'sap-fiori-kt',
+    label: '5) SAP Fiori KT',
+    url: 'https://onesofttek.sharepoint.com/teams/BRAMSDEDICADO-Hypera/Shared%20Documents/Forms/AllItems.aspx?id=%2Fteams%2FBRAMSDEDICADO%2DHypera%2FShared%20Documents%2FHypera%2FPHYPP01%2FOpera%C3%A7%C3%A3o%2F06%20%2D%20KB%20Gestao%20do%20Conhecimento%2F08%20%2D%20KT%20%2D%20Acessos%2FAcessos%20SAP%2FFIORI&viewid=937dbe3c%2Ddc4f%2D4d8e%2D8cbf%2Dd6ce2065bf4e&csf=1&web=1&e=jfr2Ci&OR=Teams%2DHL&CT=1666641935651&clickparams=eyJBcHBOYW1lIjoiVGVhbXMtRGVza3RvcCIsIkFwcFZlcnNpb24iOiIyNy8yMjEwMTQwNjMwMCIsIkhhc0ZlZGVyYXRlZFVzZXIiOmZhbHNlfQ%3D%3D&cid=574ad085%2Df076%2D45de%2Db01e%2D5412cefa40c1&FolderCTID=0x01200079B836931E16C74DB8AFCBEDDED92EEE&share=cgqj%2D0t8LqrKRKRsRnlugcImEgUDv1HDitX75lRQNy4AxWtatg',
+  },
+  {
+    id: 'sap-fiori-biblioteca',
+    label: '6) SAP Fiori Biblioteca',
+    url: 'https://fioriappslibrary.hana.ondemand.com/sap/fix/externalViewer/',
+  },
+  {
+    id: 'sap-btp',
+    label: '7) SAP BTP',
+    url: 'https://ae1tmgugt.accounts.ondemand.com/admin/',
+  },
+];
+
 export const HubView: React.FC<HubViewProps> = ({
   signature,
   onSaveSignature,
@@ -56,14 +114,20 @@ export const HubView: React.FC<HubViewProps> = ({
   favoriteGeneralIds,
   customGeneralTemplates,
   onToggleFavoriteGeneralLog,
+  customImportantLinks,
+  onAddImportantLink,
+  onDeleteImportantLink,
   recentLogs,
   onCopyLog,
 }) => {
   const [sigDraft, setSigDraft] = useState(signature);
   const [isGeneralMenuOpen, setIsGeneralMenuOpen] = useState(false);
   const [generalSearchQuery, setGeneralSearchQuery] = useState('');
+  const [isLinksMenuOpen, setIsLinksMenuOpen] = useState(false);
+  const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
   const generalMenuRef = useRef<HTMLDivElement>(null);
   const generalSearchInputRef = useRef<HTMLInputElement>(null);
+  const linksMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setSigDraft(signature);
@@ -95,6 +159,29 @@ export const HubView: React.FC<HubViewProps> = ({
       document.removeEventListener('keydown', handleKeyDown);
     };
   }, [isGeneralMenuOpen]);
+
+  useEffect(() => {
+    if (!isLinksMenuOpen) return;
+
+    const handleMouseDown = (event: MouseEvent) => {
+      if (linksMenuRef.current && !linksMenuRef.current.contains(event.target as Node)) {
+        setIsLinksMenuOpen(false);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsLinksMenuOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleMouseDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => {
+      document.removeEventListener('mousedown', handleMouseDown);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLinksMenuOpen]);
 
   const allGeneralTemplates = [
     ...GENERAL_LOG_TEMPLATES.map((tpl) => ({
@@ -364,6 +451,101 @@ export const HubView: React.FC<HubViewProps> = ({
               )}
             </div>
           </section>
+
+          <section
+            aria-labelledby="hub-links-heading"
+            className="bg-white border border-[#E0E4EC] rounded-lg p-5"
+          >
+            <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#E0E4EC]">
+              <div>
+                <h2 id="hub-links-heading" className="text-base font-semibold text-[#003865]">
+                  Links Importantes
+                </h2>
+                <p className="text-xs text-slate-500 mt-0.5">
+                  Acesso rápido a repositórios, portais e ferramentas de apoio em nova aba
+                </p>
+              </div>
+              <div className="flex items-center gap-3 shrink-0">
+                <span className="text-xs font-medium text-slate-500 tabular-nums">
+                  {IMPORTANT_LINKS.length + customImportantLinks.length} links
+                </span>
+                <button
+                  id="hub-new-important-link-btn"
+                  type="button"
+                  onClick={() => setIsAddLinkModalOpen(true)}
+                  className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-[#003865] bg-white border border-[#CBD5E1] hover:bg-slate-50 hover:border-[#0F62FE] rounded transition-colors whitespace-nowrap shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5 text-[#0F62FE]" />
+                  <span>Novo link</span>
+                </button>
+              </div>
+            </div>
+
+            <div ref={linksMenuRef} className="relative mt-3.5">
+              <button
+                id="hub-links-importantes-button"
+                type="button"
+                aria-haspopup="menu"
+                aria-expanded={isLinksMenuOpen}
+                onClick={() => setIsLinksMenuOpen((prev) => !prev)}
+                className="w-full inline-flex items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-white bg-[#003865] hover:bg-[#002241] rounded transition-colors"
+              >
+                <span>Selecione um link</span>
+                <ChevronDown
+                  className={`w-4 h-4 shrink-0 transition-transform ${
+                    isLinksMenuOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              {isLinksMenuOpen && (
+                <div
+                  role="menu"
+                  aria-label="Links Importantes"
+                  className="mt-2 w-full rounded border border-[#CBD5E1] bg-white shadow-lg overflow-hidden divide-y divide-[#E0E4EC] max-h-72 overflow-y-auto"
+                >
+                  {[...IMPORTANT_LINKS, ...customImportantLinks].map((item) => (
+                    <div
+                      key={item.id}
+                      className="group flex items-center hover:bg-[#E8F0FE] transition-colors"
+                    >
+                      <a
+                        role="menuitem"
+                        href={item.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={() => setIsLinksMenuOpen(false)}
+                        className="flex-1 flex items-center justify-between gap-3 px-4 py-2.5 text-sm font-medium text-[#1E293B] group-hover:text-[#003865] min-w-0"
+                      >
+                        <div className="min-w-0">
+                          <span className="block truncate">{item.label}</span>
+                          {item.isCustom && (
+                            <span className="text-[11px] text-slate-500 block">Personalizado</span>
+                          )}
+                        </div>
+                        <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0F62FE] shrink-0" />
+                      </a>
+
+                      {item.isCustom && (
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            onDeleteImportantLink(item.id);
+                          }}
+                          aria-label={`Remover link ${item.label}`}
+                          title="Remover link personalizado"
+                          className="pr-3 pl-1.5 py-2.5 text-slate-400 hover:text-red-600 transition-colors shrink-0"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </section>
         </div>
 
         {/* Right: Assinatura + Recent Logs */}
@@ -474,6 +656,16 @@ export const HubView: React.FC<HubViewProps> = ({
           </section>
         </div>
       </div>
+
+      {isAddLinkModalOpen && (
+        <Suspense fallback={null}>
+          <CustomLinkModal
+            isOpen={isAddLinkModalOpen}
+            onSave={onAddImportantLink}
+            onClose={() => setIsAddLinkModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };

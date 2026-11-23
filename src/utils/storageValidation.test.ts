@@ -3,7 +3,9 @@ import assert from 'node:assert/strict';
 import {
   parseStoredCustomTemplates,
   parseStoredHistory,
+  parseStoredImportantLinks,
   parseStoredStringArray,
+  sanitizeHttpUrl,
 } from './storageValidation';
 
 test('parseStoredHistory accepts valid entries and rejects corrupted/non-array payloads', () => {
@@ -79,4 +81,23 @@ test('parseStoredCustomTemplates validates template structure and discards malfo
   assert.equal(parsed.length, 1);
   assert.equal(parsed[0].id, 'custom-1');
   assert.equal(parsed[0].hasGreeting, false);
+});
+
+test('sanitizeHttpUrl and parseStoredImportantLinks only permit valid http/https links', () => {
+  assert.equal(sanitizeHttpUrl('https://portal.empresa.com/sap'), 'https://portal.empresa.com/sap');
+  assert.equal(sanitizeHttpUrl('portal.empresa.com/sap'), 'https://portal.empresa.com/sap');
+  assert.equal(sanitizeHttpUrl('javascript:alert(1)'), null);
+  assert.equal(sanitizeHttpUrl('data:text/html,<script>alert(1)</script>'), null);
+  assert.equal(sanitizeHttpUrl('   '), null);
+
+  const payload = JSON.stringify([
+    { id: 'link-1', label: 'Portal BTP', url: 'https://ae1tmgugt.accounts.ondemand.com/admin/' },
+    { id: 'link-xss', label: 'Malicioso', url: 'javascript:alert(1)' },
+    { id: 'link-empty', label: '', url: 'https://example.com' },
+  ]);
+
+  const parsed = parseStoredImportantLinks(payload);
+  assert.equal(parsed.length, 1);
+  assert.equal(parsed[0].id, 'link-1');
+  assert.equal(parsed[0].isCustom, true);
 });
