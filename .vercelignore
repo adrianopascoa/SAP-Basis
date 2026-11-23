@@ -1,0 +1,8 @@
+.aistudio
+.playwright-cli
+node_modules
+dist
+src/**/*.test.ts
+public/assets/aistudio/WhatsApp_Image_*
+public/assets/aistudio/image_*
+public/assets/aistudio/Image_*

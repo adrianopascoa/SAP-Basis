@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { ExternalLink } from 'lucide-react';
 import {
   AppRoute,
@@ -13,17 +13,32 @@ import {
   parseStoredStringArray,
 } from './utils/storageValidation';
 import { HubView } from './components/HubView';
-import { ArmGrcView } from './components/ArmGrcView';
-import { BrmView } from './components/BrmView';
-import {
-  ArmLegadosView,
-  ArmMultiploView,
-  EncerramentoStandaloneView,
-} from './components/ArmExtraViews';
-import { LogsGeraisView } from './components/LogsGeraisView';
-import { HistoryView } from './components/HistoryView';
-import { SignatureModal } from './components/SignatureModal';
 import { Toast, ToastMessage } from './components/Toast';
+
+const ArmGrcView = lazy(() =>
+  import('./components/ArmGrcView').then((m) => ({ default: m.ArmGrcView }))
+);
+const BrmView = lazy(() =>
+  import('./components/BrmView').then((m) => ({ default: m.BrmView }))
+);
+const ArmLegadosView = lazy(() =>
+  import('./components/ArmExtraViews').then((m) => ({ default: m.ArmLegadosView }))
+);
+const ArmMultiploView = lazy(() =>
+  import('./components/ArmExtraViews').then((m) => ({ default: m.ArmMultiploView }))
+);
+const EncerramentoStandaloneView = lazy(() =>
+  import('./components/ArmExtraViews').then((m) => ({ default: m.EncerramentoStandaloneView }))
+);
+const LogsGeraisView = lazy(() =>
+  import('./components/LogsGeraisView').then((m) => ({ default: m.LogsGeraisView }))
+);
+const HistoryView = lazy(() =>
+  import('./components/HistoryView').then((m) => ({ default: m.HistoryView }))
+);
+const SignatureModal = lazy(() =>
+  import('./components/SignatureModal').then((m) => ({ default: m.SignatureModal }))
+);
 
 const SIGNATURE_STORAGE_KEY = 'sap_basis_signature_v1';
 const HISTORY_STORAGE_KEY = 'sap_basis_log_history_v1';
@@ -369,135 +384,147 @@ export default function App() {
       {/* Main Content */}
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
         <div key={route} className="page-transition-enter">
-        {route === 'hub' && (
-          <HubView
-            signature={signature}
-            onSaveSignature={handleSaveSignature}
-            onNavigate={setRoute}
-            onOpenGeneralLog={(id) => {
-              setSelectedGeneralLogId(id);
-              setRoute('logs-gerais');
-            }}
-            onCreateCustomGeneralLog={() => {
-              setPendingOpenCreateCustom(true);
-              setRoute('logs-gerais');
-            }}
-            favoriteGeneralIds={favoriteGeneralIds}
-            customGeneralTemplates={customGeneralTemplates}
-            onToggleFavoriteGeneralLog={handleToggleFavoriteGeneralLog}
-            recentLogs={history}
-            onCopyLog={handleCopyEntry}
-          />
-        )}
-
-        {route === 'arm-grc' && (
-          <ArmGrcView
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'arm-legados' && (
-          <ArmLegadosView
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'arm-multiplo' && (
-          <ArmMultiploView
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'arm-encerramento' && (
-          <EncerramentoStandaloneView
-            modulo="ARM"
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'brm-manutencao' && (
-          <BrmView
-            mode="manutencao"
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'brm-legados' && (
-          <BrmView
-            mode="legados"
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'brm-encerramento' && (
-          <EncerramentoStandaloneView
-            modulo="BRM"
-            signature={signature}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'logs-gerais' && (
-          <LogsGeraisView
-            initialTemplateId={selectedGeneralLogId}
-            signature={signature}
-            customGeneralTemplates={customGeneralTemplates}
-            favoriteGeneralIds={favoriteGeneralIds}
-            pendingOpenCreateCustom={pendingOpenCreateCustom}
-            onConsumePendingOpenCreateCustom={() => setPendingOpenCreateCustom(false)}
-            onToggleFavoriteGeneralLog={handleToggleFavoriteGeneralLog}
-            onSaveCustomGeneralLog={handleSaveCustomGeneralLog}
-            onDeleteCustomGeneralLog={handleDeleteCustomGeneralLog}
-            onLogGenerated={handleLogGenerated}
-            onNotify={notify}
-            onCloseToHub={() => setRoute('hub')}
-          />
-        )}
-
-        {route === 'historico' && (
-          <HistoryView
-            entries={history}
-            onCopyEntry={handleCopyEntry}
-            onDeleteEntry={(id) =>
-              setHistory((prev) => prev.filter((item) => item.id !== id))
+          <Suspense
+            fallback={
+              <div className="bg-white border border-[#E0E4EC] rounded-lg p-10 text-center text-xs text-slate-500">
+                Carregando módulo...
+              </div>
             }
-            onClearAll={() => {
-              setHistory([]);
-              notify('info', 'Histórico limpo');
-            }}
-            onBackToHub={() => setRoute('hub')}
-            onNotify={notify}
-          />
-        )}
+          >
+            {route === 'hub' && (
+              <HubView
+                signature={signature}
+                onSaveSignature={handleSaveSignature}
+                onNavigate={setRoute}
+                onOpenGeneralLog={(id) => {
+                  setSelectedGeneralLogId(id);
+                  setRoute('logs-gerais');
+                }}
+                onCreateCustomGeneralLog={() => {
+                  setPendingOpenCreateCustom(true);
+                  setRoute('logs-gerais');
+                }}
+                favoriteGeneralIds={favoriteGeneralIds}
+                customGeneralTemplates={customGeneralTemplates}
+                onToggleFavoriteGeneralLog={handleToggleFavoriteGeneralLog}
+                recentLogs={history}
+                onCopyLog={handleCopyEntry}
+              />
+            )}
+
+            {route === 'arm-grc' && (
+              <ArmGrcView
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'arm-legados' && (
+              <ArmLegadosView
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'arm-multiplo' && (
+              <ArmMultiploView
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'arm-encerramento' && (
+              <EncerramentoStandaloneView
+                modulo="ARM"
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'brm-manutencao' && (
+              <BrmView
+                mode="manutencao"
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'brm-legados' && (
+              <BrmView
+                mode="legados"
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'brm-encerramento' && (
+              <EncerramentoStandaloneView
+                modulo="BRM"
+                signature={signature}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'logs-gerais' && (
+              <LogsGeraisView
+                initialTemplateId={selectedGeneralLogId}
+                signature={signature}
+                customGeneralTemplates={customGeneralTemplates}
+                favoriteGeneralIds={favoriteGeneralIds}
+                pendingOpenCreateCustom={pendingOpenCreateCustom}
+                onConsumePendingOpenCreateCustom={() => setPendingOpenCreateCustom(false)}
+                onToggleFavoriteGeneralLog={handleToggleFavoriteGeneralLog}
+                onSaveCustomGeneralLog={handleSaveCustomGeneralLog}
+                onDeleteCustomGeneralLog={handleDeleteCustomGeneralLog}
+                onLogGenerated={handleLogGenerated}
+                onNotify={notify}
+                onCloseToHub={() => setRoute('hub')}
+              />
+            )}
+
+            {route === 'historico' && (
+              <HistoryView
+                entries={history}
+                onCopyEntry={handleCopyEntry}
+                onDeleteEntry={(id) =>
+                  setHistory((prev) => prev.filter((item) => item.id !== id))
+                }
+                onClearAll={() => {
+                  setHistory([]);
+                  notify('info', 'Histórico limpo');
+                }}
+                onBackToHub={() => setRoute('hub')}
+                onNotify={notify}
+              />
+            )}
+          </Suspense>
         </div>
       </main>
 
-      <SignatureModal
-        isOpen={isSignatureModalOpen}
-        signature={signature}
-        onSave={handleSaveSignature}
-        onClose={() => setIsSignatureModalOpen(false)}
-      />
+      {isSignatureModalOpen && (
+        <Suspense fallback={null}>
+          <SignatureModal
+            isOpen={isSignatureModalOpen}
+            signature={signature}
+            onSave={handleSaveSignature}
+            onClose={() => setIsSignatureModalOpen(false)}
+          />
+        </Suspense>
+      )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
     </div>

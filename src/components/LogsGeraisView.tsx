@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
   Calendar,
@@ -27,9 +27,12 @@ import {
   getDefaultPassword,
   getTimeOfDayGreeting,
 } from '../utils/generalLogs';
-import { CustomGeneralLogModal } from './CustomGeneralLogModal';
 import { LogConsole } from './LogConsole';
 import { MiniCalendarPopover } from './MiniCalendarPopover';
+
+const CustomGeneralLogModal = lazy(() =>
+  import('./CustomGeneralLogModal').then((m) => ({ default: m.CustomGeneralLogModal }))
+);
 
 interface LogsGeraisViewProps {
   initialTemplateId: GeneralLogId;
@@ -704,16 +707,20 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
         </div>
       </div>
 
-      <CustomGeneralLogModal
-        isOpen={isCustomModalOpen}
-        editingTemplate={editingCustomTemplate}
-        onSave={(draft) => {
-          const saved = onSaveCustomGeneralLog(draft);
-          setTemplateId(saved.id);
-          setManualOutput(null);
-        }}
-        onClose={() => setIsCustomModalOpen(false)}
-      />
+      {isCustomModalOpen && (
+        <Suspense fallback={null}>
+          <CustomGeneralLogModal
+            isOpen={isCustomModalOpen}
+            editingTemplate={editingCustomTemplate}
+            onSave={(draft) => {
+              const saved = onSaveCustomGeneralLog(draft);
+              setTemplateId(saved.id);
+              setManualOutput(null);
+            }}
+            onClose={() => setIsCustomModalOpen(false)}
+          />
+        </Suspense>
+      )}
     </div>
   );
 };
