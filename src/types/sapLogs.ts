@@ -1,3 +1,10 @@
+export type AuthRoute =
+  | 'login'
+  | 'cadastro'
+  | 'recuperar-senha'
+  | 'email-enviado'
+  | 'redefinir-senha';
+
 export type AppRoute =
   | 'hub'
   | 'arm-grc'
@@ -8,7 +15,8 @@ export type AppRoute =
   | 'brm-legados'
   | 'brm-encerramento'
   | 'logs-gerais'
-  | 'historico';
+  | 'historico'
+  | AuthRoute;
 
 export type BuiltInGeneralLogId =
   | 'envio-brm-grc'

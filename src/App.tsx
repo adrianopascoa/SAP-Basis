@@ -1,7 +1,8 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
-import { ExternalLink } from 'lucide-react';
+import { ExternalLink, LogOut } from 'lucide-react';
 import {
   AppRoute,
+  AuthRoute,
   CustomGeneralLogTemplate,
   GeneralLogId,
   ImportantLinkItem,
@@ -42,7 +43,11 @@ const HistoryView = lazy(() =>
 const SignatureModal = lazy(() =>
   import('./components/SignatureModal').then((m) => ({ default: m.SignatureModal }))
 );
+const AuthFlow = lazy(() =>
+  import('./components/auth/AuthFlow').then((m) => ({ default: m.AuthFlow }))
+);
 
+const AUTH_SESSION_KEY = 'sap_basis_auth_simulated_v1';
 const SIGNATURE_STORAGE_KEY = 'sap_basis_signature_v1';
 const HISTORY_STORAGE_KEY = 'sap_basis_log_history_v1';
 const FAVORITE_GENERAL_LOGS_KEY = 'sap_basis_general_favorites_v1';
@@ -54,8 +59,57 @@ Adriano Pascoa| Application Management Services SAP Basis
 
 Atenciosamente,`;
 
+function getStoredAuth(): boolean {
+  try {
+    return window.sessionStorage.getItem(AUTH_SESSION_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
+function parseRouteFromPath(pathname: string, isAuthenticated: boolean): AppRoute {
+  const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+  if (clean === '/cadastro' || clean === '/register' || clean === '/auth/cadastro') return 'cadastro';
+  if (clean === '/recuperar-senha' || clean === '/forgot-password' || clean === '/auth/recuperar-senha')
+    return 'recuperar-senha';
+  if (clean === '/email-enviado' || clean === '/auth/email-enviado') return 'email-enviado';
+  if (clean === '/redefinir-senha' || clean === '/reset-password' || clean === '/auth/redefinir-senha')
+    return 'redefinir-senha';
+  if (clean === '/login' || clean === '/auth/login') return 'login';
+
+  // Se não estiver autenticado, a rota inicial ou qualquer rota interna é direcionada ao Login
+  if (!isAuthenticated) {
+    return 'login';
+  }
+
+  // Rotas internas protegidas (quando autenticado)
+  if (clean === '/arm-grc') return 'arm-grc';
+  if (clean === '/arm-legados') return 'arm-legados';
+  if (clean === '/arm-multiplo') return 'arm-multiplo';
+  if (clean === '/arm-encerramento') return 'arm-encerramento';
+  if (clean === '/brm-manutencao') return 'brm-manutencao';
+  if (clean === '/brm-legados') return 'brm-legados';
+  if (clean === '/brm-encerramento') return 'brm-encerramento';
+  if (clean === '/logs-gerais') return 'logs-gerais';
+  if (clean === '/historico') return 'historico';
+  return 'hub';
+}
+
 export default function App() {
-  const [route, setRoute] = useState<AppRoute>('hub');
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return getStoredAuth();
+    }
+    return false;
+  });
+
+  const [route, setRoute] = useState<AppRoute>(() => {
+    if (typeof window !== 'undefined') {
+      const isAuth = getStoredAuth();
+      return parseRouteFromPath(window.location.pathname, isAuth);
+    }
+    return 'login';
+  });
   const [selectedGeneralLogId, setSelectedGeneralLogId] =
     useState<GeneralLogId>('envio-brm-grc');
   const [signature, setSignature] = useState<string>(() => {
@@ -115,6 +169,35 @@ export default function App() {
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [route]);
+
+  useEffect(() => {
+    const isAuth =
+      route === 'login' ||
+      route === 'cadastro' ||
+      route === 'recuperar-senha' ||
+      route === 'email-enviado' ||
+      route === 'redefinir-senha';
+
+    if (!isAuthenticated && !isAuth) {
+      setRoute('login');
+      return;
+    }
+
+    const targetPath = isAuth ? `/${route}` : route === 'hub' ? '/' : `/${route}`;
+    if (window.location.pathname !== targetPath) {
+      window.history.pushState(null, '', targetPath);
+    }
+  }, [route, isAuthenticated]);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      const isAuth = getStoredAuth();
+      const matched = parseRouteFromPath(window.location.pathname, isAuth);
+      setRoute(matched);
+    };
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
 
   useEffect(() => {
     try {
@@ -281,6 +364,31 @@ export default function App() {
     notify('success', 'Log copiado', `${entry.actionLabel} (${entry.chamado || 'Registro'})`);
   };
 
+  const handleLoginSuccess = useCallback(
+    (email: string) => {
+      try {
+        window.sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
+      } catch {
+        // Ignore storage quota errors
+      }
+      setIsAuthenticated(true);
+      setRoute('hub');
+      notify('success', 'Login realizado!', `Bem-vindo de volta, ${email}`);
+    },
+    [notify]
+  );
+
+  const handleLogout = useCallback(() => {
+    try {
+      window.sessionStorage.removeItem(AUTH_SESSION_KEY);
+    } catch {
+      // Ignore storage errors
+    }
+    setIsAuthenticated(false);
+    setRoute('login');
+    notify('info', 'Sessão encerrada', 'Você saiu da sua conta.');
+  }, [notify]);
+
   const isArmActive =
     route === 'arm-grc' ||
     route === 'arm-legados' ||
@@ -288,6 +396,35 @@ export default function App() {
     route === 'arm-encerramento';
   const isBrmActive =
     route === 'brm-manutencao' || route === 'brm-legados' || route === 'brm-encerramento';
+
+  const isAuthRoute =
+    route === 'login' ||
+    route === 'cadastro' ||
+    route === 'recuperar-senha' ||
+    route === 'email-enviado' ||
+    route === 'redefinir-senha';
+
+  if (!isAuthenticated || isAuthRoute) {
+    return (
+      <>
+        <Suspense
+          fallback={
+            <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC] text-slate-500 text-sm">
+              Carregando autenticação...
+            </div>
+          }
+        >
+          <AuthFlow
+            currentRoute={isAuthRoute ? route : 'login'}
+            onNavigate={(nextRoute) => setRoute(nextRoute)}
+            onLoginSuccess={handleLoginSuccess}
+            onNotify={notify}
+          />
+        </Suspense>
+        <Toast toast={toast} onDismiss={() => setToast(null)} />
+      </>
+    );
+  }
 
   return (
     <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-[#1E293B]">
@@ -381,14 +518,23 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: 1 primary action */}
-          <div className="flex items-center shrink-0">
+          {/* Zone 3: Actions (Assinatura E-mail + Sair) */}
+          <div className="flex items-center gap-2 shrink-0">
             <button
               type="button"
               onClick={() => setIsSignatureModalOpen(true)}
-              className="px-4 py-2 text-xs font-semibold text-white bg-[#003865] hover:bg-[#0F62FE] rounded whitespace-nowrap shrink-0"
+              className="px-4 py-2 text-xs font-semibold text-white bg-[#003865] hover:bg-[#0F62FE] rounded whitespace-nowrap shrink-0 cursor-pointer"
             >
               Assinatura E-mail
+            </button>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="inline-flex items-center gap-1.5 px-3 py-2 text-xs font-semibold text-rose-700 bg-rose-50 hover:bg-rose-100 border border-rose-200 rounded transition-colors whitespace-nowrap shrink-0 cursor-pointer"
+              title="Sair da conta e voltar para o login"
+            >
+              <LogOut className="w-3.5 h-3.5" />
+              <span>Sair</span>
             </button>
           </div>
         </div>
@@ -419,6 +565,14 @@ export default function App() {
               {item.label}
             </button>
           ))}
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold rounded whitespace-nowrap shrink-0 text-rose-600 bg-rose-50 hover:bg-rose-100"
+          >
+            <LogOut className="w-3 h-3" />
+            <span>Sair</span>
+          </button>
           <a
             href="https://extrator-su53.vercel.app/"
             target="_blank"
