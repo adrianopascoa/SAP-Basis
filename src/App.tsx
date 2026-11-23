@@ -7,6 +7,11 @@ import {
   LogHistoryEntry,
 } from './types/sapLogs';
 import { DEFAULT_SIGNATURE } from './utils/logGenerators';
+import {
+  parseStoredCustomTemplates,
+  parseStoredHistory,
+  parseStoredStringArray,
+} from './utils/storageValidation';
 import { HubView } from './components/HubView';
 import { ArmGrcView } from './components/ArmGrcView';
 import { BrmView } from './components/BrmView';
@@ -49,7 +54,7 @@ export default function App() {
   const [history, setHistory] = useState<LogHistoryEntry[]>(() => {
     try {
       const raw = window.localStorage.getItem(HISTORY_STORAGE_KEY);
-      return raw ? (JSON.parse(raw) as LogHistoryEntry[]) : [];
+      return parseStoredHistory(raw);
     } catch {
       return [];
     }
@@ -58,7 +63,7 @@ export default function App() {
   const [favoriteGeneralIds, setFavoriteGeneralIds] = useState<string[]>(() => {
     try {
       const raw = window.localStorage.getItem(FAVORITE_GENERAL_LOGS_KEY);
-      return raw ? (JSON.parse(raw) as string[]) : [];
+      return parseStoredStringArray(raw);
     } catch {
       return [];
     }
@@ -68,7 +73,7 @@ export default function App() {
     () => {
       try {
         const raw = window.localStorage.getItem(CUSTOM_GENERAL_LOGS_KEY);
-        return raw ? (JSON.parse(raw) as CustomGeneralLogTemplate[]) : [];
+        return parseStoredCustomTemplates(raw);
       } catch {
         return [];
       }
@@ -223,7 +228,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-[#1E293B]">
       {/* Top Bar Contract: 1 row, 3 zones separated by gap-8 */}
       <header className="md:sticky md:top-0 z-30 bg-white border-b border-[#E0E4EC]">
-        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-8">
+        <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 md:gap-6 lg:gap-8">
           {/* Zone 1: Brand logo */}
           <button
             type="button"
@@ -350,7 +355,7 @@ export default function App() {
             </button>
           ))}
           <a
-            href="https://extrator-su53.ai.studio"
+            href="https://extrator-su53.vercel.app/"
             target="_blank"
             rel="noopener noreferrer"
             className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-[#003865] bg-white border border-[#CBD5E1] hover:bg-[#EFF5FF] hover:border-[#0F62FE] rounded whitespace-nowrap shrink-0"
