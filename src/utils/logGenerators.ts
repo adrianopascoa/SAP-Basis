@@ -5,6 +5,7 @@ import {
   BrmFormState,
   EncerramentoStandaloneState,
 } from '../types/sapLogs';
+import { getDatePlusDays } from './generalLogs';
 
 export const DEFAULT_SIGNATURE = `Você receberá uma Pesquisa de Satisfação em seu e-mail quando este chamado for encerrado. Sua avaliação é fundamental para que possamos aprimorar nosso atendimento.
 NOME| Application Management Services SAP Basis
@@ -41,6 +42,8 @@ export const DEFAULT_ARM_STATE: ArmFormState = {
   deptSolicitante: '',
   chamado: '',
   grcRequestNumber: '',
+  aprovador1: '',
+  aprovador2: '',
   usuarioCopiaSap: '',
   usuarioSap: '',
   nomeCompleto: '',
@@ -72,6 +75,8 @@ export const ARM_EXAMPLE_STATE: ArmFormState = {
   deptSolicitante: 'Área Exemplo',
   chamado: 'RITM0000123',
   grcRequestNumber: '9999',
+  aprovador1: 'APROVADOR1.EXEMPLO',
+  aprovador2: 'APROVADOR2.EXEMPLO',
   usuarioCopiaSap: 'USRCOPIA01',
   usuarioSap: 'USREXEMPLO01',
   nomeCompleto: 'João da Silva Exemplo',
@@ -298,7 +303,11 @@ export function generateArmLog(state: ArmFormState): string {
   return lines.join('\n');
 }
 
-export function generateArmLogServNow(state: ArmFormState, signature: string): string {
+export function generateArmLogServNow(
+  state: ArmFormState,
+  signature: string,
+  now: Date = new Date()
+): string {
   const abertoPor = clean(state.abertoPor);
   const grc = clean(state.grcRequestNumber);
   const chamado = clean(state.chamado);
@@ -313,10 +322,17 @@ export function generateArmLogServNow(state: ArmFormState, signature: string): s
   const requesterMeta = [cargoSol, deptSol].filter(Boolean).join(' - ');
   const requesterPart = requesterMeta ? `${abertoPor} (${requesterMeta})` : abertoPor;
   const details = formatArmDetailsBlock(state, 'servnow');
+  const aprovador1 = clean(state.aprovador1) || 'NOME';
+  const aprovador2 = clean(state.aprovador2) || 'NOME';
+  const dataLimite = getDatePlusDays(8, now);
 
   return [
     `Prezado(a) ${abertoPor}.`,
     `Foi aberto no GRC AC a solicitação ${grc}, para a validação dos respectivos Aprovadores dentro do sistema SAP GRC - AC.`,
+    '',
+    `1º Aprovador – ${aprovador1} - Aguardando aprovação.`,
+    `2º Aprovador – ${aprovador2} - Aguardando aprovação.`,
+    `Se não ocorrer aprovação até a data ${dataLimite}, o chamado será cancelado automaticamente por falta de aprovação.`,
     '----------------------------------------------------------',
     'Detalhes da solicitação.',
     '',

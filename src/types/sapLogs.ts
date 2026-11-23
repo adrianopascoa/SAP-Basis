@@ -79,6 +79,8 @@ export interface ArmFormState {
   deptSolicitante: string;
   chamado: string;
   grcRequestNumber: string;
+  aprovador1: string;
+  aprovador2: string;
 
   // Standard User / Profile / Delegation fields
   usuarioCopiaSap: string;

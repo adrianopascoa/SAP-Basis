@@ -106,15 +106,40 @@ test('ARM Gerar Log Serv. Now matches prompt specification with GRC number and s
       terceiro: false,
       usuarioCopiaSap: 'User cópia',
     },
-    DEFAULT_SIGNATURE
+    DEFAULT_SIGNATURE,
+    new Date(2026, 10, 23)
   );
 
   assert.match(output, /^Prezado\(a\) Usuário exemplo\./);
   assert.match(output, /Foi aberto no GRC AC a solicitação 1234/);
+  assert.match(
+    output,
+    /1º Aprovador – NOME - Aguardando aprovação\.\n2º Aprovador – NOME - Aguardando aprovação\.\nSe não ocorrer aprovação até a data 01\.12\.2026, o chamado será cancelado automaticamente por falta de aprovação\.\n----------------------------------------------------------/
+  );
   assert.match(output, /Cargo: Cargo, Departamento/);
   assert.match(output, /Tipo do colaborador: Funcionario/);
   assert.match(output, /Usuário copia: User cópia/);
   assert.match(output, /NOME\| Application Management Services SAP Basis/);
+
+  const outputWithApprovers = generateArmLogServNow(
+    {
+      ...DEFAULT_ARM_STATE,
+      grcRequestNumber: '1234',
+      chamado: 'RITM001234',
+      abertoPor: 'Usuário exemplo',
+      ambiente: 'Ambiente',
+      nomeCompleto: 'Nome exemplo',
+      usuarioSap: 'User SAP',
+      aprovador1: 'Maria Aprovadora',
+      aprovador2: 'Carlos Gestor',
+    },
+    DEFAULT_SIGNATURE,
+    new Date(2026, 10, 23)
+  );
+  assert.match(
+    outputWithApprovers,
+    /1º Aprovador – Maria Aprovadora - Aguardando aprovação\.\n2º Aprovador – Carlos Gestor - Aguardando aprovação\./
+  );
 });
 
 test('ARM switches cleanly for Troca de perfil, Delegação de aprovações, and Terceiro validity', () => {

@@ -4,7 +4,6 @@ import { ArmFormState, ArmRequestType } from '../types/sapLogs';
 import {
   ARM_EXAMPLE_STATE,
   DEFAULT_ARM_STATE,
-  SAP_ENVIRONMENTS,
   generateArmLog,
   generateArmLogAnexo,
   generateArmLogEncerramento,
@@ -780,18 +779,48 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                 </label>
                 <input
                   id="arm-ambiente"
-                  list="arm-env-options"
                   type="text"
                   placeholder="ECP/EQ1/ED1/ACP/ACQ/ACD"
                   value={form.ambiente}
                   onChange={(e) => updateField('ambiente', e.target.value)}
                   className={inputClass('ambiente')}
                 />
-                <datalist id="arm-env-options">
-                  {SAP_ENVIRONMENTS.map((env) => (
-                    <option key={env} value={env} />
-                  ))}
-                </datalist>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E0E4EC]">
+                <div>
+                  <label
+                    htmlFor="arm-aprovador-1"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    1º Aprovador (Serv. Now)
+                  </label>
+                  <input
+                    id="arm-aprovador-1"
+                    type="text"
+                    placeholder="NOME"
+                    value={form.aprovador1}
+                    onChange={(e) => updateField('aprovador1', e.target.value)}
+                    className={inputClass('aprovador1')}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="arm-aprovador-2"
+                    className="block text-xs font-semibold text-slate-700 mb-1"
+                  >
+                    2º Aprovador (Serv. Now)
+                  </label>
+                  <input
+                    id="arm-aprovador-2"
+                    type="text"
+                    placeholder="NOME"
+                    value={form.aprovador2}
+                    onChange={(e) => updateField('aprovador2', e.target.value)}
+                    className={inputClass('aprovador2')}
+                  />
+                </div>
               </div>
             </div>
           </section>
