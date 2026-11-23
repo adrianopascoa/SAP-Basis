@@ -40,8 +40,8 @@ test('getDatePlusDays computes DD.MM.YYYY accurately including month rollover', 
   assert.equal(getDatePlusDays(8, new Date(2026, 11, 28)), '05.01.2027');
 });
 
-test('GENERAL_LOG_TEMPLATES exposes all 14 numbered templates (1 to 14) and appends signature', () => {
-  assert.equal(GENERAL_LOG_TEMPLATES.length, 14);
+test('GENERAL_LOG_TEMPLATES exposes all 15 numbered templates (1 to 15) and appends signature', () => {
+  assert.equal(GENERAL_LOG_TEMPLATES.length, 15);
 
   const afternoon = new Date(2026, 10, 21, 15, 0, 0);
   GENERAL_LOG_TEMPLATES.forEach((tpl, index) => {
@@ -133,6 +133,11 @@ test('Template 1, 3, 4, 5, 7 tecnico, and 12 format fields and defaults accurate
     t14Default,
     /Se não ocorrer aprovação até a data 29\.11\.2026, o chamado será cancelado automaticamente por falta de aprovação\./
   );
+
+  const t15 = generateGeneralLog('encerramento-arm', DEFAULT_GENERAL_LOG_VALUES, DEFAULT_SIGNATURE, {
+    now: morning,
+  });
+  assert.match(t15, /^Bom dia!\n\nConforme solicitado, o acesso foi criado\. Seguem os detalhes:\n\nLogin automático, não requer senha\.\nPara acessar o Coupa, aguarde uma hora após o envio desta mensagem\./);
 });
 
 test('detectUnfilledPlaceholders finds XXXX and NOME in body while ignoring NOME in default signature', () => {

@@ -751,13 +751,17 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                       >
                         Perfil
                       </label>
-                      <input
+                      <textarea
                         id="arm-perfil"
-                        type="text"
+                        rows={3}
                         placeholder="Ex.: Z:EXEMPLO_PERFIL_01"
                         value={form.perfil}
                         onChange={(e) => updateField('perfil', e.target.value)}
-                        className={`${inputClass('perfil')} font-mono`}
+                        className={`w-full rounded border px-3 py-2 text-sm font-mono text-[#1E293B] bg-white focus:outline-none focus:ring-2 resize-y ${
+                          hasError('perfil')
+                            ? 'border-[#DA1E28] focus:border-[#DA1E28] focus:ring-[#DA1E28]/20'
+                            : 'border-[#CBD5E1] focus:border-[#0F62FE] focus:ring-[#0F62FE]/20'
+                        }`}
                       />
                       {hasError('perfil') && (
                         <p className="text-xs text-[#DA1E28] mt-1">Informe o perfil SAP.</p>

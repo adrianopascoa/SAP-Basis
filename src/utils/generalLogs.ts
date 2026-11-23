@@ -220,6 +220,14 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
       },
     ],
   },
+  {
+    id: 'encerramento-arm',
+    title: '15) Log de encerramento de ARM',
+    description:
+      'Confirma criação de acesso com login automático e orientação de aguardo para acesso ao Coupa.',
+    hasGreeting: true,
+    fields: [],
+  },
 ];
 
 function valOrPlaceholder(value: string, fallback = 'XXXX'): string {
@@ -392,6 +400,18 @@ export function generateGeneralLog(
         `1º Aprovador – ${valOrPlaceholder(values.aprovador1, 'NOME')} - Aguardando aprovação.`,
         `2º Aprovador – ${valOrPlaceholder(values.aprovador2, 'NOME1, NOME2, NOME3')} - Aguardando aprovação.`,
         `Se não ocorrer aprovação até a data ${dataLimite}, o chamado será cancelado automaticamente por falta de aprovação.`,
+      ].join('\n');
+      break;
+    }
+
+    case 'encerramento-arm': {
+      body = [
+        `${greeting}!`,
+        '',
+        'Conforme solicitado, o acesso foi criado. Seguem os detalhes:',
+        '',
+        'Login automático, não requer senha.',
+        'Para acessar o Coupa, aguarde uma hora após o envio desta mensagem.',
       ].join('\n');
       break;
     }

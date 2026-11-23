@@ -24,7 +24,8 @@ export type BuiltInGeneralLogId =
   | 'solicitacao-su53'
   | 'solicitacao-questionario'
   | 'troca-dono-perfil'
-  | 'aprovadores-arm';
+  | 'aprovadores-arm'
+  | 'encerramento-arm';
 
 export type GeneralLogId = BuiltInGeneralLogId | (string & {});
 

@@ -55,7 +55,7 @@ export const DEFAULT_ARM_STATE: ArmFormState = {
   nomeAtualAprovadorCargo: '',
   nomeNovoAprovadorCargo: '',
   delegarPerfil: '',
-  ambiente: 'ECP/EQ1/ED1/ACP/ACQ/ACD',
+  ambiente: '',
   usuarioAd: '',
   adDomain: 'PRATIKA.BR',
   textoEmailEncerramento: '',
