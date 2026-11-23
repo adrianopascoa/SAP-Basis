@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Eye, EyeOff, ShieldCheck } from 'lucide-react';
 import { AuthRoute, ResetPasswordFormData, ResetPasswordFormErrors } from '../../types/auth';
 import { evaluatePasswordStrength } from '../../utils/authValidation';
+import { supabase } from '../../lib/supabase';
 
 interface ResetPasswordViewProps {
   onNavigate: (route: AuthRoute) => void;
@@ -60,21 +61,38 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
     setErrors({});
 
     try {
-      // TODO: Integrar Supabase Auth
-      // Exemplo futuro:
-      // const { error } = await supabase.auth.updateUser({
-      //   password: formData.password,
-      // });
-      // if (error) throw error;
+      const { data, error } = await supabase.auth.updateUser({
+        password: formData.password,
+      });
 
-      // Simulação no cliente: senha atualizada com sucesso
-      setTimeout(() => {
-        setIsSubmitting(false);
+      if (error) {
+        let message = 'Não foi possível redefinir sua senha.';
+        if (
+          error.message.includes('different from the old password') ||
+          error.message.includes('same_password')
+        ) {
+          message = 'A nova senha deve ser diferente da senha anterior.';
+        } else if (
+          error.message.includes('Auth session missing') ||
+          error.message.includes('not authenticated')
+        ) {
+          message = 'Sessão de recuperação expirada ou inválida. Solicite um novo link por e-mail.';
+        } else if (error.message) {
+          message = error.message;
+        }
+        setErrors({ general: message });
+        return;
+      }
+
+      if (data.user) {
         onResetSuccess();
-      }, 500);
-    } catch {
+      }
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Falha ao redefinir sua senha. Tente novamente.';
+      setErrors({ general: message });
+    } finally {
       setIsSubmitting(false);
-      setErrors({ general: 'Não foi possível redefinir sua senha. Tente novamente.' });
     }
   };
 
@@ -114,7 +132,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
           type="button"
           aria-label="Voltar para login"
           onClick={() => onNavigate('login')}
-          className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors cursor-pointer"
+          disabled={isSubmitting}
+          className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-700 transition-colors cursor-pointer disabled:opacity-50"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -159,7 +178,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
               placeholder="Mínimo 8 caracteres"
               value={formData.password}
               onChange={handleChange('password')}
-              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EFF5FE] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+              disabled={isSubmitting}
+              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EFF5FE] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
                 errors.password ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
               }`}
             />
@@ -167,7 +187,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
               type="button"
               aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -259,7 +280,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
               placeholder="Repita sua nova senha"
               value={formData.confirmPassword}
               onChange={handleChange('confirmPassword')}
-              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EFF5FE] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+              disabled={isSubmitting}
+              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EFF5FE] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
                 errors.confirmPassword
                   ? 'border-red-400 focus:ring-red-400'
                   : 'border-transparent'
@@ -269,7 +291,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
               type="button"
               aria-label={showConfirmPassword ? 'Ocultar senha' : 'Exibir senha'}
               onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
             >
               {showConfirmPassword ? (
                 <EyeOff className="w-4 h-4" />
@@ -290,10 +313,19 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3.5 px-4 bg-[#2263F0] hover:bg-[#1C54D4] active:scale-[0.99] disabled:opacity-60 text-white font-semibold text-sm sm:text-[15px] rounded-2xl shadow-md shadow-blue-500/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
+            className="w-full py-3.5 px-4 bg-[#2263F0] hover:bg-[#1C54D4] active:scale-[0.99] disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm sm:text-[15px] rounded-2xl shadow-md shadow-blue-500/30 flex items-center justify-center gap-2 transition-all cursor-pointer"
           >
-            <span>{isSubmitting ? 'Salvando senha...' : 'Salvar nova senha'}</span>
-            <ArrowRight className="w-4 h-4" />
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Salvando nova senha...</span>
+              </>
+            ) : (
+              <>
+                <span>Salvar nova senha</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </form>
@@ -304,7 +336,8 @@ export const ResetPasswordView: React.FC<ResetPasswordViewProps> = ({
         <button
           type="button"
           onClick={() => onNavigate('login')}
-          className="text-[#2563EB] hover:underline font-bold transition-colors ml-1 cursor-pointer"
+          disabled={isSubmitting}
+          className="text-[#2563EB] hover:underline font-bold transition-colors ml-1 cursor-pointer disabled:opacity-50"
         >
           Entrar
         </button>

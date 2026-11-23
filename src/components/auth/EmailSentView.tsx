@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { ArrowLeft, ArrowRight, Check, Info, Mail, AtSign, ExternalLink } from 'lucide-react';
 import { AuthRoute } from '../../types/auth';
+import { supabase } from '../../lib/supabase';
 
 interface EmailSentViewProps {
   onNavigate: (route: AuthRoute) => void;
@@ -15,6 +16,7 @@ export const EmailSentView: React.FC<EmailSentViewProps> = ({
 }) => {
   const [countdown, setCountdown] = useState<number>(54);
   const [resendNotice, setResendNotice] = useState<string | null>(null);
+  const [isResending, setIsResending] = useState(false);
 
   useEffect(() => {
     if (countdown <= 0) return;
@@ -24,19 +26,35 @@ export const EmailSentView: React.FC<EmailSentViewProps> = ({
     return () => clearInterval(timer);
   }, [countdown]);
 
-  const handleResend = () => {
-    if (countdown > 0) return;
-    setCountdown(60);
-    setResendNotice('Link de recuperação reenviado com sucesso!');
-    if (onResendLink) {
-      onResendLink(recoveryEmail);
+  const handleResend = async () => {
+    if (countdown > 0 || isResending) return;
+
+    setIsResending(true);
+    setResendNotice(null);
+
+    try {
+      const redirectTo = `${window.location.origin}/redefinir-senha`;
+      const { error } = await supabase.auth.resetPasswordForEmail(recoveryEmail, {
+        redirectTo,
+      });
+
+      if (error) {
+        setResendNotice(`Erro ao reenviar: ${error.message}`);
+      } else {
+        setCountdown(60);
+        setResendNotice('Link de recuperação reenviado com sucesso! Verifique seu e-mail.');
+        if (onResendLink) {
+          onResendLink(recoveryEmail);
+        }
+      }
+    } catch {
+      setResendNotice('Falha ao reenviar o link. Tente novamente mais tarde.');
+    } finally {
+      setIsResending(false);
+      setTimeout(() => {
+        setResendNotice(null);
+      }, 5000);
     }
-    // TODO: Integrar Supabase Auth
-    // Exemplo:
-    // await supabase.auth.resetPasswordForEmail(recoveryEmail, { redirectTo: ... });
-    setTimeout(() => {
-      setResendNotice(null);
-    }, 4000);
   };
 
   const formattedCountdown = `(00:${String(countdown).padStart(2, '0')})`;
@@ -88,7 +106,7 @@ export const EmailSentView: React.FC<EmailSentViewProps> = ({
       </div>
 
       {resendNotice && (
-        <div className="mb-4 p-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs text-center font-medium">
+        <div className="mb-4 p-2.5 rounded-xl bg-blue-50 border border-blue-200 text-blue-700 text-xs text-center font-medium">
           {resendNotice}
         </div>
       )}
@@ -113,29 +131,38 @@ export const EmailSentView: React.FC<EmailSentViewProps> = ({
           <ArrowRight className="w-4 h-4" />
         </a>
 
-        {/* Simulation Shortcut to Reset Password */}
-        <button
-          type="button"
-          onClick={() => onNavigate('redefinir-senha')}
-          className="w-full py-2.5 px-3 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5"
-        >
-          <ExternalLink className="w-3.5 h-3.5 text-slate-500" />
-          <span>Simular clique no link do e-mail (Redefinir Senha)</span>
-        </button>
+        {/* Development Shortcut (only in DEV mode) */}
+        {import.meta.env.DEV && (
+          <button
+            type="button"
+            onClick={() => onNavigate('redefinir-senha')}
+            className="w-full py-2 px-3 bg-slate-100 hover:bg-slate-200 text-slate-600 text-xs font-medium rounded-xl transition-colors cursor-pointer flex items-center justify-center gap-1.5 border border-dashed border-slate-300"
+            title="Atalho visível apenas durante o desenvolvimento local"
+          >
+            <ExternalLink className="w-3.5 h-3.5 text-slate-400" />
+            <span>Testar tela de redefinição (Ambiente Dev)</span>
+          </button>
+        )}
 
         {/* Resend Link Button */}
         <button
           type="button"
-          disabled={countdown > 0}
+          disabled={countdown > 0 || isResending}
           onClick={handleResend}
           className="w-full py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 disabled:opacity-80 flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
         >
-          <span>Não recebeu?</span>
-          <span className={`text-[#2563EB] ${countdown === 0 ? 'hover:underline font-bold' : ''}`}>
-            Reenviar link
-          </span>
-          {countdown > 0 && (
-            <span className="text-slate-400 font-normal">{formattedCountdown}</span>
+          {isResending ? (
+            <span className="text-blue-600">Reenviando link...</span>
+          ) : (
+            <>
+              <span>Não recebeu?</span>
+              <span className={`text-[#2563EB] ${countdown === 0 ? 'hover:underline font-bold' : ''}`}>
+                Reenviar link
+              </span>
+              {countdown > 0 && (
+                <span className="text-slate-400 font-normal">{formattedCountdown}</span>
+              )}
+            </>
           )}
         </button>
       </div>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { AuthRoute, LoginFormData, LoginFormErrors } from '../../types/auth';
 import { isValidEmail } from '../../utils/authValidation';
+import { supabase } from '../../lib/supabase';
 
 interface LoginViewProps {
   onNavigate: (route: AuthRoute) => void;
@@ -10,8 +11,8 @@ interface LoginViewProps {
 
 export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess }) => {
   const [formData, setFormData] = useState<LoginFormData>({
-    email: 'francisco.bezerra@softtek.com',
-    password: 'password123',
+    email: '',
+    password: '',
   });
   const [errors, setErrors] = useState<LoginFormErrors>({});
   const [showPassword, setShowPassword] = useState(false);
@@ -51,22 +52,38 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess
     setErrors({});
 
     try {
-      // TODO: Integrar Supabase Auth
-      // Exemplo futuro:
-      // const { data, error } = await supabase.auth.signInWithPassword({
-      //   email: formData.email,
-      //   password: formData.password,
-      // });
-      // if (error) throw error;
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email: formData.email.trim(),
+        password: formData.password,
+      });
 
-      // Simulação de login no cliente para teste e navegação
-      setTimeout(() => {
-        setIsSubmitting(false);
-        onLoginSuccess(formData.email);
-      }, 500);
-    } catch {
+      if (error) {
+        let message = 'Falha na autenticação. Verifique suas credenciais.';
+        if (
+          error.message.includes('Invalid login credentials') ||
+          error.message.includes('invalid_credentials')
+        ) {
+          message = 'E-mail ou senha incorretos. Verifique suas credenciais.';
+        } else if (error.message.includes('Email not confirmed')) {
+          message = 'Seu e-mail ainda não foi confirmado. Verifique sua caixa de entrada.';
+        } else if (error.message.includes('Too many requests') || error.status === 429) {
+          message = 'Muitas tentativas consecutivas. Aguarde alguns instantes e tente novamente.';
+        } else if (error.message) {
+          message = error.message;
+        }
+        setErrors({ general: message });
+        return;
+      }
+
+      if (data.user) {
+        onLoginSuccess(data.user.email || formData.email.trim());
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Falha na autenticação. Tente novamente.';
+      setErrors({ general: errorMessage });
+    } finally {
       setIsSubmitting(false);
-      setErrors({ general: 'Falha na autenticação. Verifique suas credenciais.' });
     }
   };
 
@@ -131,7 +148,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess
               placeholder="seu.email@empresa.com"
               value={formData.email}
               onChange={handleChange('email')}
-              className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EBF3FF] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+              disabled={isSubmitting}
+              className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EBF3FF] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
                 errors.email ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
               }`}
             />
@@ -157,7 +175,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess
               placeholder="••••••••"
               value={formData.password}
               onChange={handleChange('password')}
-              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EBF3FF] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+              disabled={isSubmitting}
+              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EBF3FF] border rounded-xl text-slate-800 text-sm font-normal focus:bg-white focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
                 errors.password ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
               }`}
             />
@@ -165,7 +184,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess
               type="button"
               aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -180,9 +200,16 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 disabled:opacity-60 text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/25 transition duration-150 ease-in-out cursor-pointer flex items-center justify-center"
+            className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/25 transition duration-150 ease-in-out cursor-pointer flex items-center justify-center gap-2"
           >
-            {isSubmitting ? 'Entrando...' : 'Entrar'}
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Entrando...</span>
+              </>
+            ) : (
+              <span>Entrar</span>
+            )}
           </button>
         </div>
 
@@ -191,7 +218,8 @@ export const LoginView: React.FC<LoginViewProps> = ({ onNavigate, onLoginSuccess
           <button
             type="button"
             onClick={() => onNavigate('recuperar-senha')}
-            className="text-xs sm:text-sm font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline transition cursor-pointer"
+            disabled={isSubmitting}
+            className="text-xs sm:text-sm font-medium text-[#2563EB] hover:text-[#1D4ED8] hover:underline transition cursor-pointer disabled:opacity-50"
           >
             Esqueceu sua senha?
           </button>
