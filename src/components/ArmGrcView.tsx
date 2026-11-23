@@ -397,6 +397,47 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
               <span>Gerar SNC</span>
             </button>
           </section>
+
+          {/* Aprovadores (Serv. Now) */}
+          <section className="bg-white border border-[#E0E4EC] rounded-lg p-5 space-y-3.5">
+            <h2 className="text-sm font-semibold text-[#003865] pb-2 border-b border-[#E0E4EC]">
+              Aprovadores (Serv. Now)
+            </h2>
+
+            <div>
+              <label
+                htmlFor="arm-aprovador-1"
+                className="block text-xs font-semibold text-slate-700 mb-1"
+              >
+                1º Aprovador
+              </label>
+              <input
+                id="arm-aprovador-1"
+                type="text"
+                placeholder="NOME"
+                value={form.aprovador1}
+                onChange={(e) => updateField('aprovador1', e.target.value)}
+                className={inputClass('aprovador1')}
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="arm-aprovador-2"
+                className="block text-xs font-semibold text-slate-700 mb-1"
+              >
+                2º Aprovador
+              </label>
+              <input
+                id="arm-aprovador-2"
+                type="text"
+                placeholder="NOME"
+                value={form.aprovador2}
+                onChange={(e) => updateField('aprovador2', e.target.value)}
+                className={inputClass('aprovador2')}
+              />
+            </div>
+          </section>
         </div>
 
         {/* Column 2 (4 cols): Dados do Solicitante, Chamado & Usuário */}
@@ -785,42 +826,6 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                   onChange={(e) => updateField('ambiente', e.target.value)}
                   className={inputClass('ambiente')}
                 />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-[#E0E4EC]">
-                <div>
-                  <label
-                    htmlFor="arm-aprovador-1"
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    1º Aprovador (Serv. Now)
-                  </label>
-                  <input
-                    id="arm-aprovador-1"
-                    type="text"
-                    placeholder="NOME"
-                    value={form.aprovador1}
-                    onChange={(e) => updateField('aprovador1', e.target.value)}
-                    className={inputClass('aprovador1')}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="arm-aprovador-2"
-                    className="block text-xs font-semibold text-slate-700 mb-1"
-                  >
-                    2º Aprovador (Serv. Now)
-                  </label>
-                  <input
-                    id="arm-aprovador-2"
-                    type="text"
-                    placeholder="NOME"
-                    value={form.aprovador2}
-                    onChange={(e) => updateField('aprovador2', e.target.value)}
-                    className={inputClass('aprovador2')}
-                  />
-                </div>
               </div>
             </div>
           </section>
