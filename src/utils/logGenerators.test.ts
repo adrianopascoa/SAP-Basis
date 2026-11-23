@@ -252,6 +252,34 @@ NOME| Application Management Services SAP Basis
 Atenciosamente,`;
 
   assert.equal(output, expected);
+
+  const outputWithTestUser = generateBrmCobrancaEmail(
+    {
+      ...DEFAULT_BRM_STATE,
+      nomeSolicitante: 'Thiago Andrade Da Silva',
+      numeroChamado: 'TASK1520305',
+      usuarioSap: 'TASILVA07',
+      ambiente: '07) SAP ERP Qualidade - EQ1',
+    },
+    DEFAULT_SIGNATURE
+  );
+
+  assert.equal(
+    outputWithTestUser,
+    `Prezado(a) Thiago Andrade Da Silva.
+A alteração referente à solicitação TASK1520305 foi efetuada e está disponível para testes no ambiente - 07) SAP ERP Qualidade - EQ1.
+
+Por gentileza, teste toda a funcionalidade da transação e anexe as telas como evidência de utilização e responda a este e-mail para aplicarmos em produção.
+Caso ocorra falta de autorização ou erro, anexar a tela do erro e também a tela da /NSU53 no formato HTML.
+
+Usuário teste:
+TASILVA07
+
+Você receberá uma Pesquisa de Satisfação em seu e-mail quando este chamado for encerrado. Sua avaliação é fundamental para que possamos aprimorar nosso atendimento.
+NOME| Application Management Services SAP Basis
+
+Atenciosamente,`
+  );
 });
 
 test('BRM Gerar log técnico matches prompt specification verbatim', () => {
@@ -279,7 +307,7 @@ ACTVT: 02`,
 Solicitação: TASK1520305
 Conforme solicitação do(a) Colaborador(a): Thiago Andrade Da Silva
 
-Transaçãoes inclusas:
+Transações inclusas:
 SE16N
 
 Objetos:
@@ -307,6 +335,63 @@ Perfil de teste:
 TST_CHAMADO_TASK1520305`;
 
   assert.equal(output, expected);
+});
+
+test('BRM Gerar log técnico omits Transações inclusas or Objetos labels when blank', () => {
+  const withoutTransacoes = generateBrmLogTecnico({
+    ...DEFAULT_BRM_STATE,
+    nomeSolicitante: 'Thiago',
+    numeroChamado: 'TASK1520305',
+    usuarioSap: 'TASILVA07',
+    transacoes: '   ',
+    objetoNivelOrg: 'S_GUI\nACTVT: 02',
+    perfilMestre: 'Z:MESTRE',
+    perfilDerivado: 'Z:DERIVADO',
+  });
+  assert.doesNotMatch(withoutTransacoes, /Transações inclusas:/);
+  assert.match(withoutTransacoes, /\n\nObjetos:\nS_GUI\nACTVT: 02\n\nPerfil mestre/);
+
+  const withoutObjetos = generateBrmLogTecnico({
+    ...DEFAULT_BRM_STATE,
+    nomeSolicitante: 'Thiago',
+    numeroChamado: 'TASK1520305',
+    usuarioSap: 'TASILVA07',
+    transacoes: 'SE16N',
+    objetoNivelOrg: '',
+    perfilMestre: 'Z:MESTRE',
+    perfilDerivado: 'Z:DERIVADO',
+  });
+  assert.match(withoutObjetos, /\n\nTransações inclusas:\nSE16N\n\nPerfil mestre/);
+  assert.doesNotMatch(withoutObjetos, /Objetos:/);
+
+  const withoutBoth = generateBrmLogTecnico({
+    ...DEFAULT_BRM_STATE,
+    nomeSolicitante: 'Thiago',
+    numeroChamado: 'TASK1520305',
+    usuarioSap: 'TASILVA07',
+    transacoes: '',
+    objetoNivelOrg: '',
+    perfilMestre: 'Z:MESTRE',
+    perfilDerivado: 'Z:DERIVADO',
+  });
+  assert.equal(
+    withoutBoth,
+    `Informações técnicas
+Solicitação: TASK1520305
+Conforme solicitação do(a) Colaborador(a): Thiago
+
+Perfil mestre
+Z:MESTRE
+
+Perfil Derivado
+Z:DERIVADO
+
+Usuário teste:
+TASILVA07
+
+Perfil de teste:
+TST_CHAMADO_TASK1520305`
+  );
 });
 
 test('BRM Gerar log Motivo and ServiceNow parser work deterministically', () => {

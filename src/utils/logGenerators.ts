@@ -450,37 +450,49 @@ export function generateBrmCobrancaEmail(state: BrmFormState, signature: string)
   const nome = clean(state.nomeSolicitante);
   const chamado = clean(state.numeroChamado);
   const ambiente = clean(state.ambiente);
+  const usuarioSap = clean(state.usuarioSap);
 
-  return [
+  const lines = [
     `Prezado(a) ${nome}.`,
     `A alteração referente à solicitação ${chamado} foi efetuada e está disponível para testes no ambiente - ${ambiente}.`,
     '',
     'Por gentileza, teste toda a funcionalidade da transação e anexe as telas como evidência de utilização e responda a este e-mail para aplicarmos em produção.',
     'Caso ocorra falta de autorização ou erro, anexar a tela do erro e também a tela da /NSU53 no formato HTML.',
-    '',
-    signature.trim(),
-  ].join('\n');
+  ];
+
+  if (usuarioSap) {
+    lines.push('', 'Usuário teste:', usuarioSap);
+  }
+
+  lines.push('', signature.trim());
+
+  return lines.join('\n');
 }
 
 export function generateBrmLogTecnico(state: BrmFormState): string {
   const chamado = clean(state.numeroChamado);
   const nome = clean(state.nomeSolicitante);
-  const transacoes = clean(state.transacoes) || (state.alteracaoSomenteNivelOrg ? 'Alteração somente de Nível Organizacional' : '-');
-  const objetos = clean(state.objetoNivelOrg) || '-';
+  const transacoes = clean(state.transacoes);
+  const objetos = clean(state.objetoNivelOrg);
   const perfilMestre = clean(state.perfilMestre) || '-';
   const perfilDerivado = clean(state.perfilDerivado) || '-';
   const usuarioSap = clean(state.usuarioSap);
 
-  return [
+  const lines: string[] = [
     'Informações técnicas',
     `Solicitação: ${chamado}`,
     `Conforme solicitação do(a) Colaborador(a): ${nome}`,
-    '',
-    'Transaçãoes inclusas:',
-    transacoes,
-    '',
-    'Objetos:',
-    objetos,
+  ];
+
+  if (transacoes) {
+    lines.push('', 'Transações inclusas:', transacoes);
+  }
+
+  if (objetos) {
+    lines.push('', 'Objetos:', objetos);
+  }
+
+  lines.push(
     '',
     'Perfil mestre',
     perfilMestre,
@@ -492,8 +504,10 @@ export function generateBrmLogTecnico(state: BrmFormState): string {
     usuarioSap,
     '',
     'Perfil de teste:',
-    `TST_CHAMADO_${chamado}`,
-  ].join('\n');
+    `TST_CHAMADO_${chamado}`
+  );
+
+  return lines.join('\n');
 }
 
 export function generateBrmLogMotivo(state: BrmFormState): string {
