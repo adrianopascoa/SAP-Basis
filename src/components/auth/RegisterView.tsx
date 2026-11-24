@@ -2,10 +2,11 @@ import React, { useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import { AuthRoute, RegisterFormData, RegisterFormErrors } from '../../types/auth';
 import { isValidEmail } from '../../utils/authValidation';
+import { supabase } from '../../lib/supabase';
 
 interface RegisterViewProps {
   onNavigate: (route: AuthRoute) => void;
-  onRegisterSuccess: (email: string) => void;
+  onRegisterSuccess: (email: string, hasSession: boolean) => void;
 }
 
 export const RegisterView: React.FC<RegisterViewProps> = ({
@@ -73,25 +74,43 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
     setErrors({});
 
     try {
-      // TODO: Integrar Supabase Auth
-      // Exemplo futuro:
-      // const { data, error } = await supabase.auth.signUp({
-      //   email: formData.email,
-      //   password: formData.password,
-      //   options: {
-      //     data: { full_name: formData.fullName },
-      //   },
-      // });
-      // if (error) throw error;
+      const { data, error } = await supabase.auth.signUp({
+        email: formData.email.trim(),
+        password: formData.password,
+        options: {
+          data: {
+            full_name: formData.fullName.trim(),
+          },
+        },
+      });
 
-      // Simulação no cliente: cadastro realizado com sucesso
-      setTimeout(() => {
-        setIsSubmitting(false);
-        onRegisterSuccess(formData.email);
-      }, 500);
-    } catch {
+      if (error) {
+        let message = 'Não foi possível concluir o cadastro.';
+        if (
+          error.message.includes('User already registered') ||
+          error.message.includes('already exists')
+        ) {
+          message = 'Este e-mail já está cadastrado. Tente entrar ou recuperar sua senha.';
+        } else if (error.message.includes('Password should be at least')) {
+          message = 'A senha deve conter no mínimo 8 caracteres.';
+        } else if (error.message.includes('Too many requests') || error.status === 429) {
+          message = 'Muitas tentativas consecutivas. Aguarde alguns instantes.';
+        } else if (error.message) {
+          message = error.message;
+        }
+        setErrors({ general: message });
+        return;
+      }
+
+      // Se retornou sessão ativa imediata, entra direto; se não, requer confirmação de e-mail
+      const hasSession = !!data.session;
+      onRegisterSuccess(formData.email.trim(), hasSession);
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Falha ao realizar cadastro. Tente novamente.';
+      setErrors({ general: message });
+    } finally {
       setIsSubmitting(false);
-      setErrors({ general: 'Não foi possível concluir o cadastro. Tente novamente.' });
     }
   };
 
@@ -118,7 +137,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
           role="tab"
           aria-selected="false"
           onClick={() => onNavigate('login')}
-          className="flex-1 py-2 text-center text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-700 transition duration-150 cursor-pointer"
+          disabled={isSubmitting}
+          className="flex-1 py-2 text-center text-xs sm:text-sm font-medium text-slate-500 hover:text-slate-700 transition duration-150 cursor-pointer disabled:opacity-50"
         >
           Entrar
         </button>
@@ -155,7 +175,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             placeholder="Seu nome completo"
             value={formData.fullName}
             onChange={handleChange('fullName')}
-            className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+            disabled={isSubmitting}
+            className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
               errors.fullName ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
             }`}
           />
@@ -179,7 +200,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
             placeholder="seu.email@empresa.com"
             value={formData.email}
             onChange={handleChange('email')}
-            className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+            disabled={isSubmitting}
+            className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
               errors.email ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
             }`}
           />
@@ -204,7 +226,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               placeholder="Mínimo 8 caracteres"
               value={formData.password}
               onChange={handleChange('password')}
-              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+            disabled={isSubmitting}
+            className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
                 errors.password ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
               }`}
             />
@@ -212,7 +235,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               type="button"
               aria-label={showPassword ? 'Ocultar senha' : 'Exibir senha'}
               onClick={() => setShowPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
             >
               {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -238,7 +262,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               placeholder="Repita sua senha"
               value={formData.confirmPassword}
               onChange={handleChange('confirmPassword')}
-              className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+            disabled={isSubmitting}
+            className={`w-full px-3.5 py-2.5 sm:py-3 pr-10 bg-[#EBF3FF] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
                 errors.confirmPassword
                   ? 'border-red-400 focus:ring-red-400'
                   : 'border-transparent'
@@ -248,7 +273,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
               type="button"
               aria-label={showConfirmPassword ? 'Ocultar senha' : 'Exibir senha'}
               onClick={() => setShowConfirmPassword((prev) => !prev)}
-              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer"
+              disabled={isSubmitting}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 transition-colors cursor-pointer disabled:opacity-50"
             >
               {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
             </button>
@@ -269,7 +295,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
                 type="checkbox"
                 checked={formData.acceptTerms}
                 onChange={handleChange('acceptTerms')}
-                className="h-4 w-4 text-[#2563EB] focus:ring-[#2563EB] border-slate-300 rounded cursor-pointer transition-colors"
+                disabled={isSubmitting}
+                className="h-4 w-4 text-[#2563EB] focus:ring-[#2563EB] border-slate-300 rounded cursor-pointer transition-colors disabled:opacity-60"
               />
             </div>
             <div className="ml-2.5 text-xs">
@@ -294,9 +321,16 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 disabled:opacity-60 text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/25 transition duration-150 ease-in-out cursor-pointer flex items-center justify-center"
+            className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white font-semibold text-sm rounded-xl shadow-md shadow-blue-500/25 transition duration-150 ease-in-out cursor-pointer flex items-center justify-center gap-2"
           >
-            {isSubmitting ? 'Cadastrando...' : 'Cadastrar'}
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Cadastrando...</span>
+              </>
+            ) : (
+              <span>Cadastrar</span>
+            )}
           </button>
         </div>
       </form>
@@ -308,7 +342,8 @@ export const RegisterView: React.FC<RegisterViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('login')}
-            className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline ml-1 cursor-pointer"
+            disabled={isSubmitting}
+            className="font-semibold text-[#2563EB] hover:text-[#1D4ED8] hover:underline ml-1 cursor-pointer disabled:opacity-50"
           >
             Entrar
           </button>

@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ArrowLeft, ArrowRight, Info, Shield } from 'lucide-react';
 import { AuthRoute, ForgotPasswordFormData, ForgotPasswordFormErrors } from '../../types/auth';
 import { isValidEmail } from '../../utils/authValidation';
+import { supabase } from '../../lib/supabase';
 
 interface ForgotPasswordViewProps {
   onNavigate: (route: AuthRoute) => void;
@@ -46,21 +47,29 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
     setErrors({});
 
     try {
-      // TODO: Integrar Supabase Auth
-      // Exemplo futuro:
-      // const { error } = await supabase.auth.resetPasswordForEmail(formData.email, {
-      //   redirectTo: `${window.location.origin}/redefinir-senha`,
-      // });
-      // if (error) throw error;
+      const redirectTo = `${window.location.origin}/redefinir-senha`;
+      const { error } = await supabase.auth.resetPasswordForEmail(formData.email.trim(), {
+        redirectTo,
+      });
 
-      // Simulação no cliente: avança para a tela "E-mail Enviado"
-      setTimeout(() => {
-        setIsSubmitting(false);
-        onRequestResetSuccess(formData.email);
-      }, 500);
-    } catch {
+      if (error) {
+        let message = 'Falha ao solicitar recuperação de senha.';
+        if (error.message.includes('rate limit') || error.status === 429) {
+          message = 'Muitas solicitações em sequência. Aguarde 60 segundos para tentar novamente.';
+        } else if (error.message) {
+          message = error.message;
+        }
+        setErrors({ general: message });
+        return;
+      }
+
+      onRequestResetSuccess(formData.email.trim());
+    } catch (err: unknown) {
+      const message =
+        err instanceof Error ? err.message : 'Falha ao solicitar recuperação. Tente novamente.';
+      setErrors({ general: message });
+    } finally {
       setIsSubmitting(false);
-      setErrors({ general: 'Falha ao solicitar recuperação. Tente novamente mais tarde.' });
     }
   };
 
@@ -73,7 +82,8 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           type="button"
           aria-label="Voltar para a página anterior"
           onClick={() => onNavigate('login')}
-          className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer"
+          disabled={isSubmitting}
+          className="w-9 h-9 rounded-full bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-600 transition-colors focus:outline-none focus:ring-2 focus:ring-[#2563EB] cursor-pointer disabled:opacity-50"
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
@@ -118,7 +128,8 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
             placeholder="seu.email@empresa.com"
             value={formData.email}
             onChange={handleChange}
-            className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EEF4FE] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 ${
+            disabled={isSubmitting}
+            className={`w-full px-3.5 py-2.5 sm:py-3 bg-[#EEF4FE] dark:bg-[#17263E] border rounded-xl text-slate-800 dark:text-slate-100 text-sm font-normal focus:bg-white dark:focus:bg-[#162133] focus:ring-2 focus:ring-[#2563EB] transition-all outline-none placeholder:text-slate-400 disabled:opacity-60 ${
               errors.email ? 'border-red-400 focus:ring-red-400' : 'border-transparent'
             }`}
           />
@@ -132,10 +143,19 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 disabled:opacity-60 text-white text-sm sm:text-base font-semibold rounded-2xl shadow-md shadow-blue-500/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
+            className="w-full py-3 px-4 bg-[#2563EB] hover:bg-[#1D4ED8] active:bg-blue-800 disabled:opacity-60 disabled:cursor-not-allowed text-white text-sm sm:text-base font-semibold rounded-2xl shadow-md shadow-blue-500/30 transition-all duration-200 cursor-pointer flex items-center justify-center gap-2"
           >
-            <span>{isSubmitting ? 'Enviando...' : 'Enviar link de recuperação'}</span>
-            <ArrowRight className="w-4 h-4" />
+            {isSubmitting ? (
+              <>
+                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                <span>Enviando link...</span>
+              </>
+            ) : (
+              <>
+                <span>Enviar link de recuperação</span>
+                <ArrowRight className="w-4 h-4" />
+              </>
+            )}
           </button>
         </div>
       </form>
@@ -156,7 +176,8 @@ export const ForgotPasswordView: React.FC<ForgotPasswordViewProps> = ({
           <button
             type="button"
             onClick={() => onNavigate('login')}
-            className="text-[#2563EB] font-bold hover:underline ml-1 cursor-pointer"
+            disabled={isSubmitting}
+            className="text-[#2563EB] font-bold hover:underline ml-1 cursor-pointer disabled:opacity-50"
           >
             Entrar
           </button>

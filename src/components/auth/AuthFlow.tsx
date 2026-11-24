@@ -35,15 +35,24 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({
     }
   };
 
-  const handleRegisterSuccess = (email: string) => {
-    if (onNotify) {
-      onNotify(
-        'success',
-        'Conta criada com sucesso!',
-        `Seu cadastro com o e-mail ${email} foi concluído. Acesse sua conta.`
-      );
+  const handleRegisterSuccess = (email: string, hasSession: boolean) => {
+    if (hasSession) {
+      if (onNotify) {
+        onNotify('success', 'Cadastro realizado!', `Bem-vindo ao SAP Basis, ${email}`);
+      }
+      if (onLoginSuccess) {
+        onLoginSuccess(email);
+      }
+    } else {
+      if (onNotify) {
+        onNotify(
+          'info',
+          'Conta criada com sucesso!',
+          `Enviamos um e-mail de confirmação para ${email}. Verifique sua caixa de entrada para ativar o acesso.`
+        );
+      }
+      onNavigate('login');
     }
-    onNavigate('login');
   };
 
   const handleRequestResetSuccess = (email: string) => {
@@ -56,7 +65,11 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({
 
   const handleResetSuccess = () => {
     if (onNotify) {
-      onNotify('success', 'Senha redefinida!', 'Sua nova senha foi salva. Faça login.');
+      onNotify(
+        'success',
+        'Senha redefinida com sucesso!',
+        'Sua nova senha foi salva. Entre na sua conta para continuar.'
+      );
     }
     onNavigate('login');
   };

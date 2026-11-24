@@ -1,5 +1,7 @@
 import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
 import { ExternalLink, LogOut } from 'lucide-react';
+import type { Session } from '@supabase/supabase-js';
+import { supabase } from './lib/supabase';
 import {
   AppRoute,
   AuthRoute,
@@ -53,7 +55,6 @@ const AuthFlow = lazy(() =>
   import('./components/auth/AuthFlow').then((m) => ({ default: m.AuthFlow }))
 );
 
-const AUTH_SESSION_KEY = 'sap_basis_auth_simulated_v1';
 const SIGNATURE_STORAGE_KEY = 'sap_basis_signature_v1';
 const HISTORY_STORAGE_KEY = 'sap_basis_log_history_v1';
 const FAVORITE_GENERAL_LOGS_KEY = 'sap_basis_general_favorites_v1';
@@ -65,24 +66,47 @@ Adriano Pascoa| Application Management Services SAP Basis
 
 Atenciosamente,`;
 
-function getStoredAuth(): boolean {
-  try {
-    return window.sessionStorage.getItem(AUTH_SESSION_KEY) === 'true';
-  } catch {
-    return false;
-  }
+function isAuthRoute(r: AppRoute): boolean {
+  return (
+    r === 'login' ||
+    r === 'cadastro' ||
+    r === 'recuperar-senha' ||
+    r === 'email-enviado' ||
+    r === 'redefinir-senha'
+  );
 }
 
 function parseRouteFromLocation(
   location: Pick<Location, 'pathname' | 'hash'>,
-  isAuthenticated: boolean
+  hasSession: boolean
 ): AppRoute {
   const rawHash = location.hash ? location.hash.replace(/^#/, '') : '';
-  const candidatePath = rawHash
-    ? rawHash.startsWith('/')
-      ? rawHash
-      : `/${rawHash}`
-    : location.pathname;
+  const isRouteHash =
+    rawHash.startsWith('/') ||
+    [
+      'login',
+      'cadastro',
+      'recuperar-senha',
+      'email-enviado',
+      'redefinir-senha',
+      'hub',
+      'arm-grc',
+      'arm-legados',
+      'arm-multiplo',
+      'arm-encerramento',
+      'brm-manutencao',
+      'brm-legados',
+      'brm-encerramento',
+      'logs-gerais',
+      'historico',
+    ].some((r) => rawHash.startsWith(r));
+
+  const candidatePath =
+    rawHash && isRouteHash
+      ? rawHash.startsWith('/')
+        ? rawHash
+        : `/${rawHash}`
+      : location.pathname;
   const clean = candidatePath.toLowerCase().replace(/\/+$/, '') || '/';
   if (clean === '/cadastro' || clean === '/register' || clean === '/auth/cadastro') return 'cadastro';
   if (clean === '/recuperar-senha' || clean === '/forgot-password' || clean === '/auth/recuperar-senha')
@@ -90,14 +114,20 @@ function parseRouteFromLocation(
   if (clean === '/email-enviado' || clean === '/auth/email-enviado') return 'email-enviado';
   if (clean === '/redefinir-senha' || clean === '/reset-password' || clean === '/auth/redefinir-senha')
     return 'redefinir-senha';
-  if (clean === '/login' || clean === '/auth/login') return 'login';
+  if (clean === '/login' || clean === '/auth/login') {
+    return hasSession ? 'hub' : 'login';
+  }
 
-  // Se não estiver autenticado, a rota inicial ou qualquer rota interna é direcionada ao Login
-  if (!isAuthenticated) {
+  // Rota raiz '/': se tem sessão vai para o hub, senão login
+  if (clean === '/') {
+    return hasSession ? 'hub' : 'login';
+  }
+
+  // Rotas internas protegidas: sem sessão redireciona para login
+  if (!hasSession) {
     return 'login';
   }
 
-  // Rotas internas protegidas (quando autenticado)
   if (clean === '/arm-grc') return 'arm-grc';
   if (clean === '/arm-legados') return 'arm-legados';
   if (clean === '/arm-multiplo') return 'arm-multiplo';
@@ -111,17 +141,11 @@ function parseRouteFromLocation(
 }
 
 export default function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(() => {
-    if (typeof window !== 'undefined') {
-      return getStoredAuth();
-    }
-    return false;
-  });
-
+  const [session, setSession] = useState<Session | null>(null);
+  const [authLoading, setAuthLoading] = useState<boolean>(true);
   const [route, setRoute] = useState<AppRoute>(() => {
     if (typeof window !== 'undefined') {
-      const isAuth = getStoredAuth();
-      return parseRouteFromLocation(window.location, isAuth);
+      return parseRouteFromLocation(window.location, false);
     }
     return 'login';
   });
@@ -183,34 +207,80 @@ export default function App() {
   const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
+    let isMounted = true;
+
+    // 1. Obter sessão inicial do Supabase
+    supabase.auth.getSession().then(({ data: { session: initialSession }, error }) => {
+      if (!isMounted) return;
+      if (error) {
+        console.error('Erro ao verificar sessão inicial:', error);
+      }
+      setSession(initialSession);
+      setAuthLoading(false);
+
+      const hasSession = !!initialSession;
+      const target = parseRouteFromLocation(window.location, hasSession);
+      setRoute(target);
+    });
+
+    // 2. Ouvir alterações de sessão em tempo real
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, currentSession) => {
+      if (!isMounted) return;
+      setSession(currentSession);
+
+      // Tratamento do evento PASSWORD_RECOVERY enviado por e-mail
+      if (event === 'PASSWORD_RECOVERY') {
+        setRoute('redefinir-senha');
+        return;
+      }
+
+      if (event === 'SIGNED_IN') {
+        setRoute((prev) => {
+          if (prev === 'login' || prev === 'cadastro') {
+            return 'hub';
+          }
+          if (prev === 'redefinir-senha') {
+            return 'redefinir-senha';
+          }
+          return isAuthRoute(prev) ? 'hub' : prev;
+        });
+        return;
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setRoute('login');
+        return;
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
+  }, []);
+
+  useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [route]);
 
   useEffect(() => {
-    const isAuth =
-      route === 'login' ||
-      route === 'cadastro' ||
-      route === 'recuperar-senha' ||
-      route === 'email-enviado' ||
-      route === 'redefinir-senha';
+    if (authLoading) return;
 
-    if (!isAuthenticated && !isAuth) {
-      setRoute('login');
-      return;
-    }
-
+    const isAuth = isAuthRoute(route);
     const targetHash = isAuth ? `#/${route}` : route === 'hub' ? '' : `#/${route}`;
     const targetUrl = targetHash ? `/${targetHash}` : '/';
     const currentUrl = `${window.location.pathname}${window.location.hash}`;
     if (currentUrl !== targetUrl) {
       window.history.pushState(null, '', targetUrl);
     }
-  }, [route, isAuthenticated]);
+  }, [route, authLoading]);
 
   useEffect(() => {
     const handleLocationChange = () => {
-      const isAuth = getStoredAuth();
-      const matched = parseRouteFromLocation(window.location, isAuth);
+      const hasSession = !!session;
+      const matched = parseRouteFromLocation(window.location, hasSession);
       setRoute(matched);
     };
     window.addEventListener('popstate', handleLocationChange);
@@ -219,7 +289,21 @@ export default function App() {
       window.removeEventListener('popstate', handleLocationChange);
       window.removeEventListener('hashchange', handleLocationChange);
     };
-  }, []);
+  }, [session]);
+
+  useEffect(() => {
+    if (authLoading) return;
+
+    if (!session) {
+      if (!isAuthRoute(route)) {
+        setRoute('login');
+      }
+    } else {
+      if (route === 'login' || route === 'cadastro') {
+        setRoute('hub');
+      }
+    }
+  }, [session, route, authLoading]);
 
   useEffect(() => {
     try {
@@ -430,26 +514,20 @@ export default function App() {
 
   const handleLoginSuccess = useCallback(
     (email: string) => {
-      try {
-        window.sessionStorage.setItem(AUTH_SESSION_KEY, 'true');
-      } catch {
-        // Ignore storage quota errors
-      }
-      setIsAuthenticated(true);
       setRoute('hub');
       notify('success', 'Login realizado!', `Bem-vindo de volta, ${email}`);
     },
     [notify]
   );
 
-  const handleLogout = useCallback(() => {
+  const handleLogout = useCallback(async () => {
     try {
-      window.sessionStorage.removeItem(AUTH_SESSION_KEY);
-    } catch {
-      // Ignore storage errors
+      await supabase.auth.signOut();
+    } catch (err) {
+      console.error('Erro ao encerrar sessão:', err);
     }
     clearAllDrafts();
-    setIsAuthenticated(false);
+    setSession(null);
     setRoute('login');
     notify('info', 'Sessão encerrada', 'Você saiu da sua conta.');
   }, [notify]);
@@ -462,14 +540,19 @@ export default function App() {
   const isBrmActive =
     route === 'brm-manutencao' || route === 'brm-legados' || route === 'brm-encerramento';
 
-  const isAuthRoute =
-    route === 'login' ||
-    route === 'cadastro' ||
-    route === 'recuperar-senha' ||
-    route === 'email-enviado' ||
-    route === 'redefinir-senha';
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex flex-col items-center justify-center bg-slate-50 text-slate-500 text-sm">
+        <div className="w-8 h-8 border-3 border-[#2563EB] border-t-transparent rounded-full animate-spin mb-3" />
+        <span className="font-medium text-slate-600">Verificando sessão...</span>
+      </div>
+    );
+  }
 
-  if (!isAuthenticated || isAuthRoute) {
+  const shouldRenderAuth = !session || (isAuthRoute(route) && route === 'redefinir-senha');
+
+  if (shouldRenderAuth) {
+    const currentAuthRoute = isAuthRoute(route) ? (route as AuthRoute) : 'login';
     return (
       <>
         <Suspense
@@ -480,7 +563,7 @@ export default function App() {
           }
         >
           <AuthFlow
-            currentRoute={isAuthRoute ? route : 'login'}
+            currentRoute={currentAuthRoute}
             onNavigate={(nextRoute) => setRoute(nextRoute)}
             onLoginSuccess={handleLoginSuccess}
             onNotify={notify}
