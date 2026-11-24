@@ -125,6 +125,7 @@ export const HubView: React.FC<HubViewProps> = ({
   const [generalSearchQuery, setGeneralSearchQuery] = useState('');
   const [isLinksMenuOpen, setIsLinksMenuOpen] = useState(false);
   const [isAddLinkModalOpen, setIsAddLinkModalOpen] = useState(false);
+  const [confirmDeleteLinkId, setConfirmDeleteLinkId] = useState<string | null>(null);
   const generalMenuRef = useRef<HTMLDivElement>(null);
   const generalSearchInputRef = useRef<HTMLInputElement>(null);
   const linksMenuRef = useRef<HTMLDivElement>(null);
@@ -166,6 +167,7 @@ export const HubView: React.FC<HubViewProps> = ({
     const handleMouseDown = (event: MouseEvent) => {
       if (linksMenuRef.current && !linksMenuRef.current.contains(event.target as Node)) {
         setIsLinksMenuOpen(false);
+        setConfirmDeleteLinkId(null);
       }
     };
 
@@ -399,7 +401,7 @@ export const HubView: React.FC<HubViewProps> = ({
                             key={tpl.id}
                             role="option"
                             aria-selected={false}
-                            className="group flex items-center gap-1 hover:bg-[#E8F0FE]"
+                            className="group flex items-center gap-1 hover:bg-[#E8F0FE] dark:hover:bg-[#1E2E4A] transition-colors !opacity-100"
                           >
                             <button
                               type="button"
@@ -410,10 +412,10 @@ export const HubView: React.FC<HubViewProps> = ({
                               aria-label={isFav ? `Desafixar ${tpl.title}` : `Fixar ${tpl.title}`}
                               aria-pressed={isFav}
                               title={isFav ? 'Remover dos fixados' : 'Fixar no topo'}
-                              className={`pl-3 pr-1.5 py-2.5 shrink-0 ${
+                              className={`pl-3 pr-1.5 py-2.5 shrink-0 !opacity-100 ${
                                 isFav
                                   ? 'text-amber-500 hover:text-amber-600'
-                                  : 'text-slate-300 hover:text-amber-500'
+                                  : 'text-slate-300 dark:text-slate-400 hover:text-amber-500'
                               }`}
                             >
                               <Star
@@ -428,12 +430,14 @@ export const HubView: React.FC<HubViewProps> = ({
                                 setIsGeneralMenuOpen(false);
                                 onOpenGeneralLog(tpl.id);
                               }}
-                              className="flex-1 text-left pr-4 py-2.5 text-sm text-[#1E293B] group-hover:text-[#003865] flex items-center justify-between gap-3 min-w-0"
+                              className="flex-1 text-left pr-4 py-2.5 text-sm text-[#1E293B] dark:!text-white group-hover:text-[#003865] dark:group-hover:!text-[#BAE6FD] !opacity-100 flex items-center justify-between gap-3 min-w-0"
                             >
                               <div className="min-w-0">
-                                <span className="font-medium block truncate">{tpl.title}</span>
+                                <span className="font-medium block truncate text-[#1E293B] dark:!text-white group-hover:text-[#003865] dark:group-hover:!text-[#BAE6FD]">
+                                  {tpl.title}
+                                </span>
                                 {(isFav || tpl.isCustom) && (
-                                  <span className="text-[11px] text-slate-500 block">
+                                  <span className="text-[11px] text-slate-500 dark:text-slate-400 block">
                                     {[isFav ? 'Fixado' : null, tpl.isCustom ? 'Personalizado' : null]
                                       .filter(Boolean)
                                       .join(' · ')}
@@ -487,7 +491,12 @@ export const HubView: React.FC<HubViewProps> = ({
                 type="button"
                 aria-haspopup="menu"
                 aria-expanded={isLinksMenuOpen}
-                onClick={() => setIsLinksMenuOpen((prev) => !prev)}
+                onClick={() =>
+                  setIsLinksMenuOpen((prev) => {
+                    if (prev) setConfirmDeleteLinkId(null);
+                    return !prev;
+                  })
+                }
                 className="w-full inline-flex items-center justify-between gap-3 px-4 py-3 text-sm font-semibold text-white bg-[#003865] hover:bg-[#002241] rounded transition-colors"
               >
                 <span>Selecione um link</span>
@@ -526,20 +535,45 @@ export const HubView: React.FC<HubViewProps> = ({
                         <ExternalLink className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0F62FE] shrink-0" />
                       </a>
 
-                      {item.isCustom && (
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onDeleteImportantLink(item.id);
-                          }}
-                          aria-label={`Remover link ${item.label}`}
-                          title="Remover link personalizado"
-                          className="pr-3 pl-1.5 py-2.5 text-slate-400 hover:text-red-600 transition-colors shrink-0"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                      {item.isCustom &&
+                        (confirmDeleteLinkId === item.id ? (
+                          <div className="flex items-center gap-1 pr-2.5 pl-1 shrink-0">
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeleteImportantLink(item.id);
+                                setConfirmDeleteLinkId(null);
+                              }}
+                              className="px-2 py-1 text-[11px] font-semibold text-white bg-[#DA1E28] hover:bg-red-700 rounded transition-colors"
+                            >
+                              Confirmar
+                            </button>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setConfirmDeleteLinkId(null);
+                              }}
+                              className="px-2 py-1 text-[11px] font-medium text-slate-600 hover:text-slate-900 bg-white border border-[#CBD5E1] rounded transition-colors"
+                            >
+                              Cancelar
+                            </button>
+                          </div>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setConfirmDeleteLinkId(item.id);
+                            }}
+                            aria-label={`Remover link ${item.label}`}
+                            title="Remover link personalizado"
+                            className="pr-3 pl-1.5 py-2.5 text-slate-400 hover:text-red-600 transition-colors shrink-0"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        ))}
                     </div>
                   ))}
                 </div>

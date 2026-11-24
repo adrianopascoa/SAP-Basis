@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { ThemeMode } from '../../hooks/useTheme';
 import { AuthRoute } from '../../types/auth';
 import { AuthLayout } from './AuthLayout';
 import { LoginView } from './LoginView';
@@ -12,6 +13,8 @@ interface AuthFlowProps {
   onNavigate: (route: AuthRoute) => void;
   onLoginSuccess?: (email: string) => void;
   onNotify?: (type: 'success' | 'info' | 'error', title: string, description?: string) => void;
+  theme?: ThemeMode;
+  onToggleTheme?: () => void;
 }
 
 export const AuthFlow: React.FC<AuthFlowProps> = ({
@@ -19,6 +22,8 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({
   onNavigate,
   onLoginSuccess,
   onNotify,
+  theme,
+  onToggleTheme,
 }) => {
   const [recoveryEmail, setRecoveryEmail] = useState<string>('francisco.bezerra@softtek.com');
 
@@ -76,7 +81,7 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({
   };
 
   return (
-    <AuthLayout>
+    <AuthLayout theme={theme} onToggleTheme={onToggleTheme}>
       {currentRoute === 'login' && (
         <LoginView onNavigate={onNavigate} onLoginSuccess={handleLoginSuccess} />
       )}

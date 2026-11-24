@@ -1,4 +1,4 @@
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Calendar, Eraser, FileInput, FileText, KeyRound, Send, X } from 'lucide-react';
 import { ArmFormState, ArmRequestType } from '../types/sapLogs';
 import {
@@ -11,6 +11,8 @@ import {
   generateSncString,
   validateArmForm,
 } from '../utils/logGenerators';
+import { copyTextToClipboard } from '../utils/clipboard';
+import { clearDraft, DRAFT_KEYS, loadDraft, saveDraft } from '../utils/draftStorage';
 import { LogConsole } from './LogConsole';
 import { MiniCalendarPopover } from './MiniCalendarPopover';
 
@@ -42,13 +44,19 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
   onNotify,
   onCloseToHub,
 }) => {
-  const [form, setForm] = useState<ArmFormState>(DEFAULT_ARM_STATE);
+  const [form, setForm] = useState<ArmFormState>(() =>
+    loadDraft(DRAFT_KEYS.ARM_GRC, DEFAULT_ARM_STATE)
+  );
   const [output, setOutput] = useState('');
   const [lastActionLabel, setLastActionLabel] = useState<string | undefined>(undefined);
   const [missingFields, setMissingFields] = useState<string[]>([]);
   const [activeCalendar, setActiveCalendar] = useState<'de' | 'ate' | null>(null);
   const deContainerRef = useRef<HTMLDivElement>(null);
   const ateContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    saveDraft(DRAFT_KEYS.ARM_GRC, form);
+  }, [form]);
 
   const updateField = <K extends keyof ArmFormState>(key: K, value: ArmFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -72,7 +80,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
         : 'border-[#CBD5E1] focus:border-[#0F62FE] focus:ring-[#0F62FE]/20'
     }`;
 
-  const handleGenerate = (mode: 'log' | 'anexo' | 'servnow' | 'encerramento' | 'snc') => {
+  const handleGenerate = async (mode: 'log' | 'anexo' | 'servnow' | 'encerramento' | 'snc') => {
     const missing = validateArmForm(form, mode);
     if (missing.length > 0) {
       setMissingFields(missing);
@@ -117,15 +125,26 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
       content: generated,
     });
 
+    const copied = await copyTextToClipboard(generated);
+    if (copied) {
+      onNotify(
+        'success',
+        `${label} gerado e copiado`,
+        'Copiado automaticamente para a área de transferência.'
+      );
+      return;
+    }
+
     onNotify('success', `${label} gerado`, 'Pronto para visualização e cópia.');
   };
 
   const handleClear = () => {
+    clearDraft(DRAFT_KEYS.ARM_GRC);
     setForm(DEFAULT_ARM_STATE);
     setOutput('');
     setLastActionLabel(undefined);
     setMissingFields([]);
-    onNotify('info', 'Campos limpos', 'Formulário ARM reiniciado.');
+    onNotify('info', 'Campos limpos', 'Formulário e rascunho ARM reiniciados.');
   };
 
   const handleLoadExample = () => {

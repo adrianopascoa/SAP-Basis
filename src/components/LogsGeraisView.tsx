@@ -1,7 +1,10 @@
 import React, { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
 import {
   AlertTriangle,
+  ArrowRight,
   Calendar,
+  Check,
+  ChevronDown,
   Edit3,
   Eraser,
   FileInput,
@@ -27,6 +30,8 @@ import {
   getDefaultPassword,
   getTimeOfDayGreeting,
 } from '../utils/generalLogs';
+import { copyTextToClipboard } from '../utils/clipboard';
+import { clearDraft, DRAFT_KEYS, loadDraft, saveDraft } from '../utils/draftStorage';
 import { LogConsole } from './LogConsole';
 import { MiniCalendarPopover } from './MiniCalendarPopover';
 
@@ -76,16 +81,31 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
   onNotify,
   onCloseToHub,
 }) => {
-  const [templateId, setTemplateId] = useState<GeneralLogId>(initialTemplateId);
-  const [values, setValues] = useState<GeneralLogValues>(() => ({
+  const buildDefaultValues = (): GeneralLogValues => ({
     ...DEFAULT_GENERAL_LOG_VALUES,
     senha: getDefaultPassword(),
     dataLimiteAprovacao: getDatePlusDays(8),
+  });
+
+  const [initialDraft] = useState(() =>
+    loadDraft(DRAFT_KEYS.LOGS_GERAIS, {
+      values: buildDefaultValues(),
+      customFieldValues: {} as Record<string, Record<string, string>>,
+      greetingMode: 'auto' as 'auto' | GreetingShift,
+    })
+  );
+
+  const [templateId, setTemplateId] = useState<GeneralLogId>(initialTemplateId);
+  const [values, setValues] = useState<GeneralLogValues>(() => ({
+    ...buildDefaultValues(),
+    ...(initialDraft.values || {}),
   }));
   const [customFieldValues, setCustomFieldValues] = useState<
     Record<string, Record<string, string>>
-  >({});
-  const [greetingMode, setGreetingMode] = useState<'auto' | GreetingShift>('auto');
+  >(() => initialDraft.customFieldValues || {});
+  const [greetingMode, setGreetingMode] = useState<'auto' | GreetingShift>(
+    () => initialDraft.greetingMode || 'auto'
+  );
   const [manualOutput, setManualOutput] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -93,8 +113,38 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
   const [editingCustomTemplate, setEditingCustomTemplate] =
     useState<CustomGeneralLogTemplate | null>(null);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
+  const [isTemplateMenuOpen, setIsTemplateMenuOpen] = useState(false);
 
   const dateContainerRef = useRef<HTMLDivElement>(null);
+  const templateMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isTemplateMenuOpen) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      if (templateMenuRef.current && !templateMenuRef.current.contains(event.target as Node)) {
+        setIsTemplateMenuOpen(false);
+      }
+    };
+    const handleEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsTemplateMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
+  }, [isTemplateMenuOpen]);
+
+  useEffect(() => {
+    saveDraft(DRAFT_KEYS.LOGS_GERAIS, {
+      values,
+      customFieldValues,
+      greetingMode,
+    });
+  }, [values, customFieldValues, greetingMode]);
 
   useEffect(() => {
     setTemplateId(initialTemplateId);
@@ -224,6 +274,7 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
     setManualOutput(null);
     setIsCalendarOpen(false);
     setConfirmDeleteId(null);
+    setIsTemplateMenuOpen(false);
   };
 
   const handleSearchChange = (nextQuery: string) => {
@@ -238,7 +289,7 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
     }
   };
 
-  const handleGenerateAndSave = () => {
+  const handleGenerateAndSave = async () => {
     const finalOutput = displayOutput;
     setManualOutput(null);
 
@@ -263,11 +314,21 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
       content: finalOutput,
     });
 
+    const copied = await copyTextToClipboard(finalOutput);
+
     if (hasPlaceholderWarning) {
       onNotify(
         'warning',
-        'Log salvo com placeholders em aberto',
+        copied
+          ? 'Log salvo e copiado com placeholders em aberto'
+          : 'Log salvo com placeholders em aberto',
         `${buildWarningDetails()}. Revise antes de enviar.`
+      );
+    } else if (copied) {
+      onNotify(
+        'success',
+        'Log gerado e copiado',
+        `${activeTitle} copiado automaticamente para a área de transferência.`
       );
     } else {
       onNotify('success', 'Log gerado', `${activeTitle} pronto para cópia.`);
@@ -287,21 +348,20 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
   };
 
   const handleClear = () => {
-    setValues({
-      ...DEFAULT_GENERAL_LOG_VALUES,
-      senha: getDefaultPassword(),
-      dataLimiteAprovacao: getDatePlusDays(8),
-    });
+    clearDraft(DRAFT_KEYS.LOGS_GERAIS);
+    setValues(buildDefaultValues());
     if (activeCustom) {
       setCustomFieldValues((prev) => ({
         ...prev,
         [activeCustom.id]: {},
       }));
+    } else {
+      setCustomFieldValues({});
     }
     setGreetingMode('auto');
     setManualOutput(null);
     setIsCalendarOpen(false);
-    onNotify('info', 'Campos limpos', 'Valores de Logs Gerais reiniciados.');
+    onNotify('info', 'Campos limpos', 'Valores e rascunho de Logs Gerais reiniciados.');
   };
 
   const handleLoadExample = () => {
@@ -431,22 +491,72 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
               </div>
 
               <div className="flex items-center gap-2">
-                <select
-                  id="general-log-select"
-                  value={activeCustom ? activeCustom.id : activeBuiltIn!.id}
-                  onChange={(e) => handleTemplateChange(e.target.value as GeneralLogId)}
-                  className="flex-1 min-w-0 h-9 rounded border border-[#CBD5E1] bg-white px-2.5 text-sm font-medium text-[#003865] focus:border-[#0F62FE] focus:outline-none focus:ring-2 focus:ring-[#0F62FE]/20"
-                >
-                  {filteredTemplates.length === 0 ? (
-                    <option value={templateId}>{activeTitle}</option>
-                  ) : (
-                    filteredTemplates.map((tpl) => (
-                      <option key={tpl.id} value={tpl.id}>
-                        {favoriteSet.has(tpl.id) ? `★ ${tpl.title}` : tpl.title}
-                      </option>
-                    ))
+                <div ref={templateMenuRef} className="relative flex-1 min-w-0">
+                  <button
+                    id="general-log-select"
+                    type="button"
+                    aria-haspopup="listbox"
+                    aria-expanded={isTemplateMenuOpen}
+                    onClick={() => setIsTemplateMenuOpen((prev) => !prev)}
+                    className="w-full h-9 rounded border border-[#CBD5E1] bg-white px-2.5 text-sm font-medium text-[#003865] dark:!text-white !opacity-100 focus:border-[#0F62FE] focus:outline-none focus:ring-2 focus:ring-[#0F62FE]/20 flex items-center justify-between gap-2 text-left"
+                  >
+                    <span className="truncate">
+                      {isCurrentFavorite ? `★ ${activeTitle}` : activeTitle}
+                    </span>
+                    <ChevronDown
+                      className={`w-4 h-4 shrink-0 text-slate-500 dark:text-slate-300 transition-transform ${
+                        isTemplateMenuOpen ? 'rotate-180' : ''
+                      }`}
+                    />
+                  </button>
+
+                  {isTemplateMenuOpen && (
+                    <div
+                      role="listbox"
+                      aria-label="Modelo de Log Geral"
+                      className="absolute left-0 right-0 z-30 mt-1 max-h-72 overflow-y-auto rounded border border-[#CBD5E1] bg-white shadow-lg divide-y divide-[#E0E4EC]"
+                    >
+                      {filteredTemplates.length === 0 ? (
+                        <div className="px-3.5 py-3 text-xs text-slate-500">
+                          Nenhum modelo encontrado.
+                        </div>
+                      ) : (
+                        filteredTemplates.map((tpl) => {
+                          const activeId = activeCustom ? activeCustom.id : activeBuiltIn!.id;
+                          const isSelected = tpl.id === activeId;
+                          return (
+                            <button
+                              key={tpl.id}
+                              type="button"
+                              role="option"
+                              aria-selected={isSelected}
+                              data-list-row-btn="true"
+                              onClick={() => handleTemplateChange(tpl.id)}
+                              className={`group w-full text-left px-3.5 py-2.5 text-sm font-medium flex items-center justify-between gap-3 transition-colors !opacity-100 hover:bg-[#E8F0FE] ${
+                                isSelected ? 'bg-[#EFF5FF]' : ''
+                              }`}
+                            >
+                              <span
+                                className={`truncate ${
+                                  isSelected
+                                    ? 'text-[#003865] dark:!text-[#BAE6FD]'
+                                    : 'text-[#1E293B] dark:!text-white group-hover:text-[#003865] dark:group-hover:!text-[#BAE6FD]'
+                                }`}
+                              >
+                                {favoriteSet.has(tpl.id) ? `★ ${tpl.title}` : tpl.title}
+                              </span>
+                              {isSelected ? (
+                                <Check className="w-3.5 h-3.5 text-[#0F62FE] shrink-0" />
+                              ) : (
+                                <ArrowRight className="w-3.5 h-3.5 text-slate-400 group-hover:text-[#0F62FE] shrink-0" />
+                              )}
+                            </button>
+                          );
+                        })
+                      )}
+                    </div>
                   )}
-                </select>
+                </div>
 
                 <button
                   id="general-log-favorite-btn"
@@ -683,14 +793,14 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
             <div
               role="status"
               data-testid="placeholder-warning-banner"
-              className="flex items-start gap-2.5 rounded-lg border border-amber-300 bg-amber-50 px-4 py-3 text-xs text-amber-950"
+              className="flex items-start gap-2.5 rounded-lg border border-amber-300 dark:border-amber-500/40 bg-amber-50 px-4 py-3 text-xs text-amber-950 dark:text-amber-100"
             >
-              <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+              <AlertTriangle className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
               <div className="min-w-0 leading-relaxed">
-                <p className="font-semibold text-amber-950">
+                <p className="font-semibold text-amber-950 dark:text-amber-100">
                   Atenção: há campos ou placeholders em aberto antes da cópia
                 </p>
-                <p className="text-amber-900 mt-0.5">{buildWarningDetails()}</p>
+                <p className="text-amber-900 dark:text-amber-200 mt-0.5">{buildWarningDetails()}</p>
               </div>
             </div>
           )}

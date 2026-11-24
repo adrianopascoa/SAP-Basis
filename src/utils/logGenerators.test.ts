@@ -117,7 +117,7 @@ test('ARM Gerar Log Serv. Now matches prompt specification with GRC number and s
     /1º Aprovador – NOME - Aguardando aprovação\.\n2º Aprovador – NOME - Aguardando aprovação\.\nSe não ocorrer aprovação até a data 01\.12\.2026, o chamado será cancelado automaticamente por falta de aprovação\.\n----------------------------------------------------------/
   );
   assert.match(output, /Cargo: Cargo, Departamento/);
-  assert.match(output, /Tipo do colaborador: Funcionario/);
+  assert.match(output, /Tipo do colaborador: Funcionário/);
   assert.match(output, /Usuário copia: User cópia/);
   assert.match(output, /NOME\| Application Management Services SAP Basis/);
 
@@ -166,25 +166,46 @@ test('ARM switches cleanly for Troca de perfil, Delegação de aprovações, and
   assert.match(troca, /Tipo do colaborador: Terceiro/);
   assert.match(troca, /Período: De 20\.11\.2026 até 31\.12\.2026/);
 
-  const delegacao = generateArmLogAnexo({
-    ...DEFAULT_ARM_STATE,
-    requestType: 'Delegação de aprovações',
-    chamado: 'REQ777',
-    abertoPor: 'Maria',
-    ambiente: 'GP1',
-    nomeAtualAprovadorCargo: 'João / Gerente',
-    usuarioAtualAprovador: 'JGERENTE',
-    nomeNovoAprovadorCargo: 'Pedro / Coordenador',
-    usuarioNovoAprovador: 'PCOORD',
-    delegarPerfil: 'Z_APROVADOR_MM',
-    emDias: true,
-    dias: '15',
-  });
+  const delegacao = generateArmLogAnexo(
+    {
+      ...DEFAULT_ARM_STATE,
+      requestType: 'Delegação de aprovações',
+      chamado: 'REQ777',
+      abertoPor: 'Maria',
+      ambiente: 'GP1',
+      nomeAtualAprovadorCargo: 'João / Gerente',
+      usuarioAtualAprovador: 'JGERENTE',
+      nomeNovoAprovadorCargo: 'Pedro / Coordenador',
+      usuarioNovoAprovador: 'PCOORD',
+      delegarPerfil: 'Z_APROVADOR_MM',
+      emDias: true,
+      dias: '15',
+    },
+    new Date(2026, 10, 24)
+  );
 
   assert.match(delegacao, /Aprovador Atual: João \/ Gerente \/ JGERENTE/);
   assert.match(delegacao, /Novo Aprovador: Pedro \/ Coordenador \/ PCOORD/);
   assert.match(delegacao, /Delegar perfil: Z_APROVADOR_MM/);
-  assert.match(delegacao, /Período: 15 dias/);
+  assert.match(delegacao, /Período: 15 dias\nDe: 24\.11\.2026\nAté: 09\.12\.2026/);
+
+  const armEmDias = generateArmLog(
+    {
+      ...DEFAULT_ARM_STATE,
+      chamado: 'RITM001234',
+      nomeCompleto: 'Nome exemplo',
+      usuarioSap: 'User SAP',
+      cargo: 'Cargo',
+      departamento: 'Departamento',
+      perfil: 'Perfil',
+      terceiro: true,
+      usuarioCopiaSap: 'User cópia',
+      emDias: true,
+      dias: '30',
+    },
+    new Date(2026, 10, 24)
+  );
+  assert.match(armEmDias, /Período: 30 dias\nDe: 24\.11\.2026\nAté: 24\.12\.2026$/);
 });
 
 test('ARM Gerar SNC formats AD user to p:CN=...', () => {

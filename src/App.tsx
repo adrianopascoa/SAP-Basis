@@ -18,8 +18,14 @@ import {
   parseStoredStringArray,
   sanitizeHttpUrl,
 } from './utils/storageValidation';
+import { clearAllDrafts } from './utils/draftStorage';
+import { copyTextToClipboard } from './utils/clipboard';
+import { useTheme } from './hooks/useTheme';
 import { HubView } from './components/HubView';
-import { Toast, ToastMessage } from './components/Toast';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { ThemeToggle } from './components/ThemeToggle';
+import { Toast, ToastAction, ToastMessage } from './components/Toast';
 
 const ArmGrcView = lazy(() =>
   import('./components/ArmGrcView').then((m) => ({ default: m.ArmGrcView }))
@@ -70,8 +76,38 @@ function isAuthRoute(r: AppRoute): boolean {
   );
 }
 
-function parseRouteFromPath(pathname: string, hasSession: boolean): AppRoute {
-  const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+function parseRouteFromLocation(
+  location: Pick<Location, 'pathname' | 'hash'>,
+  hasSession: boolean
+): AppRoute {
+  const rawHash = location.hash ? location.hash.replace(/^#/, '') : '';
+  const isRouteHash =
+    rawHash.startsWith('/') ||
+    [
+      'login',
+      'cadastro',
+      'recuperar-senha',
+      'email-enviado',
+      'redefinir-senha',
+      'hub',
+      'arm-grc',
+      'arm-legados',
+      'arm-multiplo',
+      'arm-encerramento',
+      'brm-manutencao',
+      'brm-legados',
+      'brm-encerramento',
+      'logs-gerais',
+      'historico',
+    ].some((r) => rawHash.startsWith(r));
+
+  const candidatePath =
+    rawHash && isRouteHash
+      ? rawHash.startsWith('/')
+        ? rawHash
+        : `/${rawHash}`
+      : location.pathname;
+  const clean = candidatePath.toLowerCase().replace(/\/+$/, '') || '/';
   if (clean === '/cadastro' || clean === '/register' || clean === '/auth/cadastro') return 'cadastro';
   if (clean === '/recuperar-senha' || clean === '/forgot-password' || clean === '/auth/recuperar-senha')
     return 'recuperar-senha';
@@ -107,7 +143,12 @@ function parseRouteFromPath(pathname: string, hasSession: boolean): AppRoute {
 export default function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [authLoading, setAuthLoading] = useState<boolean>(true);
-  const [route, setRoute] = useState<AppRoute>('login');
+  const [route, setRoute] = useState<AppRoute>(() => {
+    if (typeof window !== 'undefined') {
+      return parseRouteFromLocation(window.location, false);
+    }
+    return 'login';
+  });
   const [selectedGeneralLogId, setSelectedGeneralLogId] =
     useState<GeneralLogId>('envio-brm-grc');
   const [signature, setSignature] = useState<string>(() => {
@@ -163,6 +204,7 @@ export default function App() {
   const [pendingOpenCreateCustom, setPendingOpenCreateCustom] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     let isMounted = true;
@@ -177,7 +219,7 @@ export default function App() {
       setAuthLoading(false);
 
       const hasSession = !!initialSession;
-      const target = parseRouteFromPath(window.location.pathname, hasSession);
+      const target = parseRouteFromLocation(window.location, hasSession);
       setRoute(target);
     });
 
@@ -227,20 +269,26 @@ export default function App() {
     if (authLoading) return;
 
     const isAuth = isAuthRoute(route);
-    const targetPath = isAuth ? `/${route}` : route === 'hub' ? '/' : `/${route}`;
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState(null, '', targetPath);
+    const targetHash = isAuth ? `#/${route}` : route === 'hub' ? '' : `#/${route}`;
+    const targetUrl = targetHash ? `/${targetHash}` : '/';
+    const currentUrl = `${window.location.pathname}${window.location.hash}`;
+    if (currentUrl !== targetUrl) {
+      window.history.pushState(null, '', targetUrl);
     }
   }, [route, authLoading]);
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handleLocationChange = () => {
       const hasSession = !!session;
-      const matched = parseRouteFromPath(window.location.pathname, hasSession);
+      const matched = parseRouteFromLocation(window.location, hasSession);
       setRoute(matched);
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
   }, [session]);
 
   useEffect(() => {
@@ -304,12 +352,18 @@ export default function App() {
   }, [customImportantLinks]);
 
   const notify = useCallback(
-    (type: ToastMessage['type'], title: string, description?: string) => {
+    (
+      type: ToastMessage['type'],
+      title: string,
+      description?: string,
+      action?: ToastAction
+    ) => {
       setToast({
         id: `${Date.now()}`,
         type,
         title,
         description,
+        action,
       });
     },
     []
@@ -388,10 +442,19 @@ export default function App() {
 
   const handleDeleteImportantLink = useCallback(
     (id: string) => {
+      const removed = customImportantLinks.find((item) => item.id === id);
+      if (!removed) return;
       setCustomImportantLinks((prev) => prev.filter((item) => item.id !== id));
-      notify('info', 'Link removido', 'O link personalizado foi excluído.');
+      notify('info', 'Link removido', removed.label, {
+        label: 'Desfazer',
+        onClick: () => {
+          setCustomImportantLinks((prev) =>
+            prev.some((item) => item.id === removed.id) ? prev : [...prev, removed]
+          );
+        },
+      });
     },
-    [notify]
+    [customImportantLinks, notify]
   );
 
   const handleLogGenerated = useCallback(
@@ -414,13 +477,40 @@ export default function App() {
   );
 
   const handleCopyEntry = async (entry: LogHistoryEntry) => {
-    try {
-      await navigator.clipboard.writeText(entry.content);
-    } catch {
-      // Clipboard fallback ignored cleanly
-    }
+    await copyTextToClipboard(entry.content);
     notify('success', 'Log copiado', `${entry.actionLabel} (${entry.chamado || 'Registro'})`);
   };
+
+  const handleDeleteHistoryEntry = useCallback(
+    (id: string) => {
+      const removed = history.find((item) => item.id === id);
+      if (!removed) return;
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+      notify('info', 'Registro removido do histórico', removed.chamado || removed.actionLabel, {
+        label: 'Desfazer',
+        onClick: () => {
+          setHistory((prev) =>
+            prev.some((item) => item.id === removed.id)
+              ? prev
+              : [removed, ...prev].slice(0, 40)
+          );
+        },
+      });
+    },
+    [history, notify]
+  );
+
+  const handleClearAllHistory = useCallback(() => {
+    if (history.length === 0) return;
+    const backup = [...history];
+    setHistory([]);
+    notify('info', 'Histórico limpo', `${backup.length} registros removidos.`, {
+      label: 'Desfazer',
+      onClick: () => {
+        setHistory(backup);
+      },
+    });
+  }, [history, notify]);
 
   const handleLoginSuccess = useCallback(
     (email: string) => {
@@ -436,6 +526,7 @@ export default function App() {
     } catch (err) {
       console.error('Erro ao encerrar sessão:', err);
     }
+    clearAllDrafts();
     setSession(null);
     setRoute('login');
     notify('info', 'Sessão encerrada', 'Você saiu da sua conta.');
@@ -476,9 +567,12 @@ export default function App() {
             onNavigate={(nextRoute) => setRoute(nextRoute)}
             onLoginSuccess={handleLoginSuccess}
             onNotify={notify}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
         </Suspense>
         <Toast toast={toast} onDismiss={() => setToast(null)} />
+        <OfflineIndicator />
       </>
     );
   }
@@ -575,8 +669,10 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: Actions (Assinatura E-mail + Sair) */}
+          {/* Zone 3: Actions (Tema + Instalar App + Assinatura E-mail + Sair) */}
           <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
+            <PWAInstallButton />
             <button
               type="button"
               onClick={() => setIsSignatureModalOpen(true)}
@@ -764,13 +860,8 @@ export default function App() {
               <HistoryView
                 entries={history}
                 onCopyEntry={handleCopyEntry}
-                onDeleteEntry={(id) =>
-                  setHistory((prev) => prev.filter((item) => item.id !== id))
-                }
-                onClearAll={() => {
-                  setHistory([]);
-                  notify('info', 'Histórico limpo');
-                }}
+                onDeleteEntry={handleDeleteHistoryEntry}
+                onClearAll={handleClearAllHistory}
                 onBackToHub={() => setRoute('hub')}
                 onNotify={notify}
               />
@@ -791,6 +882,7 @@ export default function App() {
       )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <OfflineIndicator />
     </div>
   );
 }

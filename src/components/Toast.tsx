@@ -1,11 +1,17 @@
 import React, { useEffect } from 'react';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 
+export interface ToastAction {
+  label: string;
+  onClick: () => void;
+}
+
 export interface ToastMessage {
   id: string;
   type: 'success' | 'warning' | 'error' | 'info';
   title: string;
   description?: string;
+  action?: ToastAction;
 }
 
 interface ToastProps {
@@ -16,7 +22,8 @@ interface ToastProps {
 export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
   useEffect(() => {
     if (!toast) return;
-    const timer = window.setTimeout(onDismiss, 2600);
+    const duration = toast.action ? 5500 : 2600;
+    const timer = window.setTimeout(onDismiss, duration);
     return () => window.clearTimeout(timer);
   }, [toast, onDismiss]);
 
@@ -37,13 +44,25 @@ export const Toast: React.FC<ToastProps> = ({ toast, onDismiss }) => {
     <div
       role="status"
       aria-live="polite"
-      className="fixed top-20 right-6 z-50 w-[340px] max-w-[calc(100vw-2rem)] bg-white border border-[#CBD5E1] rounded shadow-lg p-3.5 flex items-start gap-3"
+      className="fixed top-20 right-6 z-50 w-[360px] max-w-[calc(100vw-2rem)] bg-white border border-[#CBD5E1] rounded shadow-lg p-3.5 flex items-start gap-3"
     >
       {icon}
       <div className="flex-1 min-w-0">
         <p className="text-sm font-semibold text-[#1E293B]">{toast.title}</p>
         {toast.description && (
           <p className="text-xs text-slate-600 mt-0.5 leading-relaxed">{toast.description}</p>
+        )}
+        {toast.action && (
+          <button
+            type="button"
+            onClick={() => {
+              toast.action?.onClick();
+              onDismiss();
+            }}
+            className="mt-2 inline-flex items-center px-2.5 py-1 text-xs font-semibold text-[#0F62FE] bg-[#EFF5FF] hover:bg-[#DCE9FF] rounded transition-colors cursor-pointer"
+          >
+            {toast.action.label}
+          </button>
         )}
       </div>
       <button
