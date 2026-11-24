@@ -67,8 +67,17 @@ function getStoredAuth(): boolean {
   }
 }
 
-function parseRouteFromPath(pathname: string, isAuthenticated: boolean): AppRoute {
-  const clean = pathname.toLowerCase().replace(/\/+$/, '') || '/';
+function parseRouteFromLocation(
+  location: Pick<Location, 'pathname' | 'hash'>,
+  isAuthenticated: boolean
+): AppRoute {
+  const rawHash = location.hash ? location.hash.replace(/^#/, '') : '';
+  const candidatePath = rawHash
+    ? rawHash.startsWith('/')
+      ? rawHash
+      : `/${rawHash}`
+    : location.pathname;
+  const clean = candidatePath.toLowerCase().replace(/\/+$/, '') || '/';
   if (clean === '/cadastro' || clean === '/register' || clean === '/auth/cadastro') return 'cadastro';
   if (clean === '/recuperar-senha' || clean === '/forgot-password' || clean === '/auth/recuperar-senha')
     return 'recuperar-senha';
@@ -106,7 +115,7 @@ export default function App() {
   const [route, setRoute] = useState<AppRoute>(() => {
     if (typeof window !== 'undefined') {
       const isAuth = getStoredAuth();
-      return parseRouteFromPath(window.location.pathname, isAuth);
+      return parseRouteFromLocation(window.location, isAuth);
     }
     return 'login';
   });
@@ -183,20 +192,26 @@ export default function App() {
       return;
     }
 
-    const targetPath = isAuth ? `/${route}` : route === 'hub' ? '/' : `/${route}`;
-    if (window.location.pathname !== targetPath) {
-      window.history.pushState(null, '', targetPath);
+    const targetHash = isAuth ? `#/${route}` : route === 'hub' ? '' : `#/${route}`;
+    const targetUrl = targetHash ? `/${targetHash}` : '/';
+    const currentUrl = `${window.location.pathname}${window.location.hash}`;
+    if (currentUrl !== targetUrl) {
+      window.history.pushState(null, '', targetUrl);
     }
   }, [route, isAuthenticated]);
 
   useEffect(() => {
-    const handlePopState = () => {
+    const handleLocationChange = () => {
       const isAuth = getStoredAuth();
-      const matched = parseRouteFromPath(window.location.pathname, isAuth);
+      const matched = parseRouteFromLocation(window.location, isAuth);
       setRoute(matched);
     };
-    window.addEventListener('popstate', handlePopState);
-    return () => window.removeEventListener('popstate', handlePopState);
+    window.addEventListener('popstate', handleLocationChange);
+    window.addEventListener('hashchange', handleLocationChange);
+    return () => {
+      window.removeEventListener('popstate', handleLocationChange);
+      window.removeEventListener('hashchange', handleLocationChange);
+    };
   }, []);
 
   useEffect(() => {
