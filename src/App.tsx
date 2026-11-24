@@ -16,8 +16,12 @@ import {
   parseStoredStringArray,
   sanitizeHttpUrl,
 } from './utils/storageValidation';
+import { clearAllDrafts } from './utils/draftStorage';
+import { copyTextToClipboard } from './utils/clipboard';
 import { HubView } from './components/HubView';
-import { Toast, ToastMessage } from './components/Toast';
+import { OfflineIndicator } from './components/OfflineIndicator';
+import { PWAInstallButton } from './components/PWAInstallButton';
+import { Toast, ToastAction, ToastMessage } from './components/Toast';
 
 const ArmGrcView = lazy(() =>
   import('./components/ArmGrcView').then((m) => ({ default: m.ArmGrcView }))
@@ -261,12 +265,18 @@ export default function App() {
   }, [customImportantLinks]);
 
   const notify = useCallback(
-    (type: ToastMessage['type'], title: string, description?: string) => {
+    (
+      type: ToastMessage['type'],
+      title: string,
+      description?: string,
+      action?: ToastAction
+    ) => {
       setToast({
         id: `${Date.now()}`,
         type,
         title,
         description,
+        action,
       });
     },
     []
@@ -345,10 +355,19 @@ export default function App() {
 
   const handleDeleteImportantLink = useCallback(
     (id: string) => {
+      const removed = customImportantLinks.find((item) => item.id === id);
+      if (!removed) return;
       setCustomImportantLinks((prev) => prev.filter((item) => item.id !== id));
-      notify('info', 'Link removido', 'O link personalizado foi excluído.');
+      notify('info', 'Link removido', removed.label, {
+        label: 'Desfazer',
+        onClick: () => {
+          setCustomImportantLinks((prev) =>
+            prev.some((item) => item.id === removed.id) ? prev : [...prev, removed]
+          );
+        },
+      });
     },
-    [notify]
+    [customImportantLinks, notify]
   );
 
   const handleLogGenerated = useCallback(
@@ -371,13 +390,40 @@ export default function App() {
   );
 
   const handleCopyEntry = async (entry: LogHistoryEntry) => {
-    try {
-      await navigator.clipboard.writeText(entry.content);
-    } catch {
-      // Clipboard fallback ignored cleanly
-    }
+    await copyTextToClipboard(entry.content);
     notify('success', 'Log copiado', `${entry.actionLabel} (${entry.chamado || 'Registro'})`);
   };
+
+  const handleDeleteHistoryEntry = useCallback(
+    (id: string) => {
+      const removed = history.find((item) => item.id === id);
+      if (!removed) return;
+      setHistory((prev) => prev.filter((item) => item.id !== id));
+      notify('info', 'Registro removido do histórico', removed.chamado || removed.actionLabel, {
+        label: 'Desfazer',
+        onClick: () => {
+          setHistory((prev) =>
+            prev.some((item) => item.id === removed.id)
+              ? prev
+              : [removed, ...prev].slice(0, 40)
+          );
+        },
+      });
+    },
+    [history, notify]
+  );
+
+  const handleClearAllHistory = useCallback(() => {
+    if (history.length === 0) return;
+    const backup = [...history];
+    setHistory([]);
+    notify('info', 'Histórico limpo', `${backup.length} registros removidos.`, {
+      label: 'Desfazer',
+      onClick: () => {
+        setHistory(backup);
+      },
+    });
+  }, [history, notify]);
 
   const handleLoginSuccess = useCallback(
     (email: string) => {
@@ -399,6 +445,7 @@ export default function App() {
     } catch {
       // Ignore storage errors
     }
+    clearAllDrafts();
     setIsAuthenticated(false);
     setRoute('login');
     notify('info', 'Sessão encerrada', 'Você saiu da sua conta.');
@@ -437,6 +484,7 @@ export default function App() {
           />
         </Suspense>
         <Toast toast={toast} onDismiss={() => setToast(null)} />
+        <OfflineIndicator />
       </>
     );
   }
@@ -533,8 +581,9 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: Actions (Assinatura E-mail + Sair) */}
+          {/* Zone 3: Actions (Instalar App + Assinatura E-mail + Sair) */}
           <div className="flex items-center gap-2 shrink-0">
+            <PWAInstallButton />
             <button
               type="button"
               onClick={() => setIsSignatureModalOpen(true)}
@@ -722,13 +771,8 @@ export default function App() {
               <HistoryView
                 entries={history}
                 onCopyEntry={handleCopyEntry}
-                onDeleteEntry={(id) =>
-                  setHistory((prev) => prev.filter((item) => item.id !== id))
-                }
-                onClearAll={() => {
-                  setHistory([]);
-                  notify('info', 'Histórico limpo');
-                }}
+                onDeleteEntry={handleDeleteHistoryEntry}
+                onClearAll={handleClearAllHistory}
                 onBackToHub={() => setRoute('hub')}
                 onNotify={notify}
               />
@@ -749,6 +793,7 @@ export default function App() {
       )}
 
       <Toast toast={toast} onDismiss={() => setToast(null)} />
+      <OfflineIndicator />
     </div>
   );
 }

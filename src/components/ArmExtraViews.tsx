@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Eraser, FileText, MailCheck, Plus, Send, Trash2, X } from 'lucide-react';
 import {
   ArmLegadosState,
@@ -13,6 +13,8 @@ import {
   generateArmMultiploLog,
   generateStandaloneEncerramento,
 } from '../utils/logGenerators';
+import { copyTextToClipboard } from '../utils/clipboard';
+import { clearDraft, DRAFT_KEYS, loadDraft, saveDraft } from '../utils/draftStorage';
 import { LogConsole } from './LogConsole';
 
 interface ExtraViewBaseProps {
@@ -29,31 +31,39 @@ interface ExtraViewBaseProps {
   onCloseToHub: () => void;
 }
 
+const DEFAULT_ARM_LEGADOS_STATE: ArmLegadosState = {
+  sistemaLegado: '',
+  chamado: '',
+  abertoPor: '',
+  cargoSolicitante: '',
+  deptSolicitante: '',
+  nomeCompleto: '',
+  loginUsuario: '',
+  cargo: '',
+  departamento: '',
+  perfilAcesso: '',
+  tipoAcao: 'Criação',
+  terceiro: false,
+  observacoes: '',
+};
+
 export const ArmLegadosView: React.FC<ExtraViewBaseProps> = ({
   signature,
   onLogGenerated,
   onNotify,
   onCloseToHub,
 }) => {
-  const [form, setForm] = useState<ArmLegadosState>({
-    sistemaLegado: '',
-    chamado: '',
-    abertoPor: '',
-    cargoSolicitante: '',
-    deptSolicitante: '',
-    nomeCompleto: '',
-    loginUsuario: '',
-    cargo: '',
-    departamento: '',
-    perfilAcesso: '',
-    tipoAcao: 'Criação',
-    terceiro: false,
-    observacoes: '',
-  });
+  const [form, setForm] = useState<ArmLegadosState>(() =>
+    loadDraft(DRAFT_KEYS.ARM_LEGADOS, DEFAULT_ARM_LEGADOS_STATE)
+  );
   const [output, setOutput] = useState('');
   const [actionLabel, setActionLabel] = useState<string | undefined>();
 
-  const run = (mode: 'log' | 'anexo' | 'email') => {
+  useEffect(() => {
+    saveDraft(DRAFT_KEYS.ARM_LEGADOS, form);
+  }, [form]);
+
+  const run = async (mode: 'log' | 'anexo' | 'email') => {
     if (!form.chamado.trim() || !form.sistemaLegado.trim() || !form.nomeCompleto.trim()) {
       onNotify(
         'error',
@@ -75,7 +85,21 @@ export const ArmLegadosView: React.FC<ExtraViewBaseProps> = ({
       solicitante: form.abertoPor || form.nomeCompleto,
       content: text,
     });
-    onNotify('success', `${label} gerado`);
+
+    const copied = await copyTextToClipboard(text);
+    onNotify(
+      'success',
+      copied ? `${label} gerado e copiado` : `${label} gerado`,
+      copied ? 'Copiado automaticamente para a área de transferência.' : undefined
+    );
+  };
+
+  const handleClear = () => {
+    clearDraft(DRAFT_KEYS.ARM_LEGADOS);
+    setForm(DEFAULT_ARM_LEGADOS_STATE);
+    setOutput('');
+    setActionLabel(undefined);
+    onNotify('info', 'Campos limpos', 'Formulário e rascunho de Legados reiniciados.');
   };
 
   return (
@@ -88,6 +112,14 @@ export const ArmLegadosView: React.FC<ExtraViewBaseProps> = ({
           </h1>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
+          >
+            <Eraser className="w-3.5 h-3.5" />
+            <span>Limpar</span>
+          </button>
           <button
             type="button"
             onClick={onCloseToHub}
@@ -311,7 +343,7 @@ export const ArmMultiploView: React.FC<ExtraViewBaseProps> = ({
     usuarioCopia: '',
   });
 
-  const [form, setForm] = useState<ArmMultiploState>({
+  const defaultMultiploState = (): ArmMultiploState => ({
     chamado: '',
     grcRequestNumber: '',
     abertoPor: '',
@@ -322,8 +354,20 @@ export const ArmMultiploView: React.FC<ExtraViewBaseProps> = ({
     terceiro: false,
     linhas: [emptyRow(), emptyRow()],
   });
+
+  const [form, setForm] = useState<ArmMultiploState>(() => {
+    const loaded = loadDraft(DRAFT_KEYS.ARM_MULTIPLO, defaultMultiploState());
+    return {
+      ...loaded,
+      linhas: Array.isArray(loaded.linhas) && loaded.linhas.length > 0 ? loaded.linhas : [emptyRow(), emptyRow()],
+    };
+  });
   const [output, setOutput] = useState('');
   const [actionLabel, setActionLabel] = useState<string | undefined>();
+
+  useEffect(() => {
+    saveDraft(DRAFT_KEYS.ARM_MULTIPLO, form);
+  }, [form]);
 
   const updateRow = (id: string, key: keyof MultiUserRow, value: string) => {
     setForm((prev) => ({
@@ -332,7 +376,7 @@ export const ArmMultiploView: React.FC<ExtraViewBaseProps> = ({
     }));
   };
 
-  const run = (mode: 'anexo' | 'servnow') => {
+  const run = async (mode: 'anexo' | 'servnow') => {
     if (!form.chamado.trim() || !form.abertoPor.trim()) {
       onNotify('error', 'Campos obrigatórios', 'Informe Chamado e Aberto Por.');
       return;
@@ -353,7 +397,20 @@ export const ArmMultiploView: React.FC<ExtraViewBaseProps> = ({
       solicitante: form.abertoPor,
       content: text,
     });
-    onNotify('success', `${label} gerado`);
+    const copied = await copyTextToClipboard(text);
+    onNotify(
+      'success',
+      copied ? `${label} gerado e copiado` : `${label} gerado`,
+      copied ? 'Copiado automaticamente para a área de transferência.' : undefined
+    );
+  };
+
+  const handleClear = () => {
+    clearDraft(DRAFT_KEYS.ARM_MULTIPLO);
+    setForm(defaultMultiploState());
+    setOutput('');
+    setActionLabel(undefined);
+    onNotify('info', 'Campos limpos', 'Formulário e rascunho de Lote reiniciados.');
   };
 
   return (
@@ -365,14 +422,24 @@ export const ArmMultiploView: React.FC<ExtraViewBaseProps> = ({
             Solicitação de Acesso Múltiplo (Lote)
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={onCloseToHub}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#003865] bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
-        >
-          <X className="w-3.5 h-3.5" />
-          <span>Fechar</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
+          >
+            <Eraser className="w-3.5 h-3.5" />
+            <span>Limpar</span>
+          </button>
+          <button
+            type="button"
+            onClick={onCloseToHub}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#003865] bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Fechar</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
@@ -614,7 +681,8 @@ export const EncerramentoStandaloneView: React.FC<EncerramentoViewProps> = ({
   onNotify,
   onCloseToHub,
 }) => {
-  const [form, setForm] = useState<EncerramentoStandaloneState>({
+  const draftKey = modulo === 'ARM' ? DRAFT_KEYS.ENCERRAMENTO_ARM : DRAFT_KEYS.ENCERRAMENTO_BRM;
+  const defaultEncerramentoState: EncerramentoStandaloneState = {
     modulo,
     chamado: '',
     solicitante: '',
@@ -624,10 +692,18 @@ export const EncerramentoStandaloneView: React.FC<EncerramentoViewProps> = ({
     status: 'Concluído',
     portal: false,
     textoBase: '',
-  });
+  };
+
+  const [form, setForm] = useState<EncerramentoStandaloneState>(() =>
+    loadDraft(draftKey, defaultEncerramentoState)
+  );
   const [output, setOutput] = useState('');
 
-  const handleGenerate = () => {
+  useEffect(() => {
+    saveDraft(draftKey, form);
+  }, [draftKey, form]);
+
+  const handleGenerate = async () => {
     if (!form.chamado.trim() || !form.solicitante.trim()) {
       onNotify('error', 'Campos obrigatórios', 'Informe Chamado e Solicitante.');
       return;
@@ -643,7 +719,19 @@ export const EncerramentoStandaloneView: React.FC<EncerramentoViewProps> = ({
       solicitante: form.solicitante,
       content: text,
     });
-    onNotify('success', 'Log de encerramento gerado');
+    const copied = await copyTextToClipboard(text);
+    onNotify(
+      'success',
+      copied ? 'Log de encerramento gerado e copiado' : 'Log de encerramento gerado',
+      copied ? 'Copiado automaticamente para a área de transferência.' : undefined
+    );
+  };
+
+  const handleClear = () => {
+    clearDraft(draftKey);
+    setForm(defaultEncerramentoState);
+    setOutput('');
+    onNotify('info', 'Campos limpos', 'Formulário e rascunho de encerramento reiniciados.');
   };
 
   return (
@@ -660,14 +748,24 @@ export const EncerramentoStandaloneView: React.FC<EncerramentoViewProps> = ({
               : 'Encerramento de Manutenção (BRM)'}
           </h1>
         </div>
-        <button
-          type="button"
-          onClick={onCloseToHub}
-          className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#003865] bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
-        >
-          <X className="w-3.5 h-3.5" />
-          <span>Fechar</span>
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleClear}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-slate-700 bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
+          >
+            <Eraser className="w-3.5 h-3.5" />
+            <span>Limpar</span>
+          </button>
+          <button
+            type="button"
+            onClick={onCloseToHub}
+            className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#003865] bg-white border border-[#CBD5E1] hover:bg-slate-50 rounded"
+          >
+            <X className="w-3.5 h-3.5" />
+            <span>Fechar</span>
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">

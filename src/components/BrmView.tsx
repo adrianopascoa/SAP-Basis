@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Eraser, FileCode2, FileInput, Mail, X } from 'lucide-react';
 import { BrmFormState } from '../types/sapLogs';
 import {
@@ -9,6 +9,8 @@ import {
   generateBrmLogTecnico,
   validateBrmForm,
 } from '../utils/logGenerators';
+import { copyTextToClipboard } from '../utils/clipboard';
+import { clearDraft, DRAFT_KEYS, loadDraft, saveDraft } from '../utils/draftStorage';
 import { LogConsole } from './LogConsole';
 
 interface BrmViewProps {
@@ -34,14 +36,20 @@ export const BrmView: React.FC<BrmViewProps> = ({
   onNotify,
   onCloseToHub,
 }) => {
-  const [form, setForm] = useState<BrmFormState>(
+  const draftKey = mode === 'legados' ? DRAFT_KEYS.BRM_LEGADOS : DRAFT_KEYS.BRM_MANUTENCAO;
+  const baseDefaultState =
     mode === 'legados'
       ? { ...DEFAULT_BRM_STATE, ambiente: 'Sistema Legado' }
-      : DEFAULT_BRM_STATE
-  );
+      : DEFAULT_BRM_STATE;
+
+  const [form, setForm] = useState<BrmFormState>(() => loadDraft(draftKey, baseDefaultState));
   const [output, setOutput] = useState('');
   const [lastActionLabel, setLastActionLabel] = useState<string | undefined>(undefined);
   const [missingFields, setMissingFields] = useState<string[]>([]);
+
+  useEffect(() => {
+    saveDraft(draftKey, form);
+  }, [draftKey, form]);
 
   const updateField = <K extends keyof BrmFormState>(key: K, value: BrmFormState[K]) => {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -90,15 +98,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
       content: generated,
     });
 
-    let copied = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(generated);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
+    const copied = await copyTextToClipboard(generated);
 
     if (copied) {
       onNotify(
@@ -113,15 +113,12 @@ export const BrmView: React.FC<BrmViewProps> = ({
   };
 
   const handleClear = () => {
-    setForm(
-      mode === 'legados'
-        ? { ...DEFAULT_BRM_STATE, ambiente: 'Sistema Legado' }
-        : DEFAULT_BRM_STATE
-    );
+    clearDraft(draftKey);
+    setForm(baseDefaultState);
     setOutput('');
     setLastActionLabel(undefined);
     setMissingFields([]);
-    onNotify('info', 'Campos limpos', 'Formulário BRM reiniciado.');
+    onNotify('info', 'Campos limpos', 'Formulário e rascunho BRM reiniciados.');
   };
 
   const handleLoadExample = () => {

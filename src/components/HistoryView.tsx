@@ -36,6 +36,7 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
 }) => {
   const [query, setQuery] = useState('');
   const [areaFilter, setAreaFilter] = useState<'ALL' | 'ARM' | 'BRM' | 'GERAIS'>('ALL');
+  const [confirmClearAll, setConfirmClearAll] = useState(false);
   const [selectedId, setSelectedId] = useState<string | null>(
     entries.length > 0 ? entries[0].id : null
   );
@@ -99,16 +100,40 @@ export const HistoryView: React.FC<HistoryViewProps> = ({
             <span>Exportar Histórico</span>
           </button>
 
-          {entries.length > 0 && (
-            <button
-              type="button"
-              onClick={onClearAll}
-              className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#DA1E28] bg-white border border-[#DA1E28] hover:bg-[#DA1E28] hover:text-white rounded transition-colors whitespace-nowrap shrink-0"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Limpar Histórico</span>
-            </button>
-          )}
+          {entries.length > 0 &&
+            (confirmClearAll ? (
+              <div className="inline-flex items-center gap-1.5 rounded border border-[#DA1E28]/40 bg-red-50 px-2 py-1">
+                <span className="text-xs font-medium text-[#DA1E28] whitespace-nowrap">
+                  Limpar todos ({entries.length})?
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClearAll();
+                    setConfirmClearAll(false);
+                  }}
+                  className="px-2.5 py-1 text-xs font-semibold text-white bg-[#DA1E28] hover:bg-red-700 rounded transition-colors whitespace-nowrap shrink-0"
+                >
+                  Confirmar
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setConfirmClearAll(false)}
+                  className="px-2 py-1 text-xs font-medium text-slate-600 hover:text-slate-900 bg-white border border-[#CBD5E1] rounded transition-colors whitespace-nowrap shrink-0"
+                >
+                  Cancelar
+                </button>
+              </div>
+            ) : (
+              <button
+                type="button"
+                onClick={() => setConfirmClearAll(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-xs font-semibold text-[#DA1E28] bg-white border border-[#DA1E28] hover:bg-[#DA1E28] hover:text-white rounded transition-colors whitespace-nowrap shrink-0"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Limpar Histórico</span>
+              </button>
+            ))}
           <button
             type="button"
             onClick={onBackToHub}

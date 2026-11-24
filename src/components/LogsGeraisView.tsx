@@ -27,6 +27,8 @@ import {
   getDefaultPassword,
   getTimeOfDayGreeting,
 } from '../utils/generalLogs';
+import { copyTextToClipboard } from '../utils/clipboard';
+import { clearDraft, DRAFT_KEYS, loadDraft, saveDraft } from '../utils/draftStorage';
 import { LogConsole } from './LogConsole';
 import { MiniCalendarPopover } from './MiniCalendarPopover';
 
@@ -76,16 +78,31 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
   onNotify,
   onCloseToHub,
 }) => {
-  const [templateId, setTemplateId] = useState<GeneralLogId>(initialTemplateId);
-  const [values, setValues] = useState<GeneralLogValues>(() => ({
+  const buildDefaultValues = (): GeneralLogValues => ({
     ...DEFAULT_GENERAL_LOG_VALUES,
     senha: getDefaultPassword(),
     dataLimiteAprovacao: getDatePlusDays(8),
+  });
+
+  const [initialDraft] = useState(() =>
+    loadDraft(DRAFT_KEYS.LOGS_GERAIS, {
+      values: buildDefaultValues(),
+      customFieldValues: {} as Record<string, Record<string, string>>,
+      greetingMode: 'auto' as 'auto' | GreetingShift,
+    })
+  );
+
+  const [templateId, setTemplateId] = useState<GeneralLogId>(initialTemplateId);
+  const [values, setValues] = useState<GeneralLogValues>(() => ({
+    ...buildDefaultValues(),
+    ...(initialDraft.values || {}),
   }));
   const [customFieldValues, setCustomFieldValues] = useState<
     Record<string, Record<string, string>>
-  >({});
-  const [greetingMode, setGreetingMode] = useState<'auto' | GreetingShift>('auto');
+  >(() => initialDraft.customFieldValues || {});
+  const [greetingMode, setGreetingMode] = useState<'auto' | GreetingShift>(
+    () => initialDraft.greetingMode || 'auto'
+  );
   const [manualOutput, setManualOutput] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [isCalendarOpen, setIsCalendarOpen] = useState(false);
@@ -95,6 +112,14 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
 
   const dateContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    saveDraft(DRAFT_KEYS.LOGS_GERAIS, {
+      values,
+      customFieldValues,
+      greetingMode,
+    });
+  }, [values, customFieldValues, greetingMode]);
 
   useEffect(() => {
     setTemplateId(initialTemplateId);
@@ -263,15 +288,7 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
       content: finalOutput,
     });
 
-    let copied = false;
-    try {
-      if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(finalOutput);
-        copied = true;
-      }
-    } catch {
-      copied = false;
-    }
+    const copied = await copyTextToClipboard(finalOutput);
 
     if (hasPlaceholderWarning) {
       onNotify(
@@ -305,21 +322,20 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
   };
 
   const handleClear = () => {
-    setValues({
-      ...DEFAULT_GENERAL_LOG_VALUES,
-      senha: getDefaultPassword(),
-      dataLimiteAprovacao: getDatePlusDays(8),
-    });
+    clearDraft(DRAFT_KEYS.LOGS_GERAIS);
+    setValues(buildDefaultValues());
     if (activeCustom) {
       setCustomFieldValues((prev) => ({
         ...prev,
         [activeCustom.id]: {},
       }));
+    } else {
+      setCustomFieldValues({});
     }
     setGreetingMode('auto');
     setManualOutput(null);
     setIsCalendarOpen(false);
-    onNotify('info', 'Campos limpos', 'Valores de Logs Gerais reiniciados.');
+    onNotify('info', 'Campos limpos', 'Valores e rascunho de Logs Gerais reiniciados.');
   };
 
   const handleLoadExample = () => {
