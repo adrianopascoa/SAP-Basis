@@ -117,7 +117,7 @@ test('ARM Gerar Log Serv. Now matches prompt specification with GRC number and s
     /1º Aprovador – NOME - Aguardando aprovação\.\n2º Aprovador – NOME - Aguardando aprovação\.\nSe não ocorrer aprovação até a data 01\.12\.2026, o chamado será cancelado automaticamente por falta de aprovação\.\n----------------------------------------------------------/
   );
   assert.match(output, /Cargo: Cargo, Departamento/);
-  assert.match(output, /Tipo do colaborador: Funcionario/);
+  assert.match(output, /Tipo do colaborador: Funcionário/);
   assert.match(output, /Usuário copia: User cópia/);
   assert.match(output, /NOME\| Application Management Services SAP Basis/);
 

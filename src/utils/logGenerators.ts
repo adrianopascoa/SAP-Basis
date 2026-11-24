@@ -182,7 +182,7 @@ function formatArmDetailsBlock(
   }
 
   if (variant === 'servnow') {
-    lines.push(`Tipo do colaborador: ${state.terceiro ? 'Terceiro' : 'Funcionario'}`);
+    lines.push(`Tipo do colaborador: ${state.terceiro ? 'Terceiro' : 'Funcionário'}`);
     if (state.requestType !== 'Delegação de aprovações') {
       lines.push(`Usuário copia: ${clean(state.usuarioCopiaSap)}`);
     }
