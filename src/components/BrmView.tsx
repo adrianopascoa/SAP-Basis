@@ -59,7 +59,7 @@ export const BrmView: React.FC<BrmViewProps> = ({
         : 'border-[#CBD5E1] focus:border-[#0F62FE] focus:ring-[#0F62FE]/20'
     }`;
 
-  const handleGenerate = (action: 'tecnico' | 'cobranca') => {
+  const handleGenerate = async (action: 'tecnico' | 'cobranca') => {
     const missing = validateBrmForm(form, action);
     if (missing.length > 0) {
       setMissingFields(missing);
@@ -89,6 +89,25 @@ export const BrmView: React.FC<BrmViewProps> = ({
       solicitante: form.nomeSolicitante,
       content: generated,
     });
+
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(generated);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+
+    if (copied) {
+      onNotify(
+        'success',
+        `${label} gerado e copiado`,
+        'Copiado automaticamente para a área de transferência.'
+      );
+      return;
+    }
 
     onNotify('success', `${label} gerado`, 'Registro disponível no console de saída.');
   };

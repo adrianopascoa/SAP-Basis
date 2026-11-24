@@ -72,7 +72,7 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
         : 'border-[#CBD5E1] focus:border-[#0F62FE] focus:ring-[#0F62FE]/20'
     }`;
 
-  const handleGenerate = (mode: 'log' | 'anexo' | 'servnow' | 'encerramento' | 'snc') => {
+  const handleGenerate = async (mode: 'log' | 'anexo' | 'servnow' | 'encerramento' | 'snc') => {
     const missing = validateArmForm(form, mode);
     if (missing.length > 0) {
       setMissingFields(missing);
@@ -116,6 +116,27 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
       solicitante: form.abertoPor || form.nomeCompleto || form.usuarioAd || '-',
       content: generated,
     });
+
+    if (mode === 'anexo' || mode === 'log' || mode === 'servnow') {
+      let copied = false;
+      try {
+        if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(generated);
+          copied = true;
+        }
+      } catch {
+        copied = false;
+      }
+
+      if (copied) {
+        onNotify(
+          'success',
+          `${label} gerado e copiado`,
+          'Copiado automaticamente para a área de transferência.'
+        );
+        return;
+      }
+    }
 
     onNotify('success', `${label} gerado`, 'Pronto para visualização e cópia.');
   };

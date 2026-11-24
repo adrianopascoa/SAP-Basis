@@ -238,7 +238,7 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
     }
   };
 
-  const handleGenerateAndSave = () => {
+  const handleGenerateAndSave = async () => {
     const finalOutput = displayOutput;
     setManualOutput(null);
 
@@ -263,11 +263,29 @@ export const LogsGeraisView: React.FC<LogsGeraisViewProps> = ({
       content: finalOutput,
     });
 
+    let copied = false;
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(finalOutput);
+        copied = true;
+      }
+    } catch {
+      copied = false;
+    }
+
     if (hasPlaceholderWarning) {
       onNotify(
         'warning',
-        'Log salvo com placeholders em aberto',
+        copied
+          ? 'Log salvo e copiado com placeholders em aberto'
+          : 'Log salvo com placeholders em aberto',
         `${buildWarningDetails()}. Revise antes de enviar.`
+      );
+    } else if (copied) {
+      onNotify(
+        'success',
+        'Log gerado e copiado',
+        `${activeTitle} copiado automaticamente para a área de transferência.`
       );
     } else {
       onNotify('success', 'Log gerado', `${activeTitle} pronto para cópia.`);
