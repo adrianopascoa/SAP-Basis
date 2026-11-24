@@ -18,9 +18,11 @@ import {
 } from './utils/storageValidation';
 import { clearAllDrafts } from './utils/draftStorage';
 import { copyTextToClipboard } from './utils/clipboard';
+import { useTheme } from './hooks/useTheme';
 import { HubView } from './components/HubView';
 import { OfflineIndicator } from './components/OfflineIndicator';
 import { PWAInstallButton } from './components/PWAInstallButton';
+import { ThemeToggle } from './components/ThemeToggle';
 import { Toast, ToastAction, ToastMessage } from './components/Toast';
 
 const ArmGrcView = lazy(() =>
@@ -178,6 +180,7 @@ export default function App() {
   const [pendingOpenCreateCustom, setPendingOpenCreateCustom] = useState(false);
   const [isSignatureModalOpen, setIsSignatureModalOpen] = useState(false);
   const [toast, setToast] = useState<ToastMessage | null>(null);
+  const { theme, toggleTheme } = useTheme();
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -481,6 +484,8 @@ export default function App() {
             onNavigate={(nextRoute) => setRoute(nextRoute)}
             onLoginSuccess={handleLoginSuccess}
             onNotify={notify}
+            theme={theme}
+            onToggleTheme={toggleTheme}
           />
         </Suspense>
         <Toast toast={toast} onDismiss={() => setToast(null)} />
@@ -581,8 +586,9 @@ export default function App() {
             </a>
           </nav>
 
-          {/* Zone 3: Actions (Instalar App + Assinatura E-mail + Sair) */}
+          {/* Zone 3: Actions (Tema + Instalar App + Assinatura E-mail + Sair) */}
           <div className="flex items-center gap-2 shrink-0">
+            <ThemeToggle theme={theme} onToggle={toggleTheme} />
             <PWAInstallButton />
             <button
               type="button"

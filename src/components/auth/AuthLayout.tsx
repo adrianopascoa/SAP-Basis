@@ -1,14 +1,20 @@
 import React from 'react';
+import { ThemeMode } from '../../hooks/useTheme';
+import { ThemeToggle } from '../ThemeToggle';
 
 interface AuthLayoutProps {
   children: React.ReactNode;
+  theme?: ThemeMode;
+  onToggleTheme?: () => void;
 }
 
-export const AuthLayout: React.FC<AuthLayoutProps> = ({ children }) => {
+export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, theme, onToggleTheme }) => {
   return (
     <div className="min-h-screen w-full flex flex-col justify-between items-center bg-slate-50 text-slate-800 antialiased p-4 sm:p-6 lg:p-8 selection:bg-blue-100 selection:text-blue-900">
-      {/* Espaçador superior invisível para balancear o alinhamento com o rodapé */}
-      <div className="hidden sm:block h-4 shrink-0" aria-hidden="true" />
+      {/* Barra superior discreta com alternância de tema */}
+      <div className="w-full max-w-md flex justify-end shrink-0">
+        {theme && onToggleTheme ? <ThemeToggle theme={theme} onToggle={onToggleTheme} /> : null}
+      </div>
 
       {/* Card principal centralizado vertical e horizontalmente */}
       <main className="w-full max-w-md my-auto flex flex-col justify-center items-center">

@@ -401,7 +401,7 @@ export const HubView: React.FC<HubViewProps> = ({
                             key={tpl.id}
                             role="option"
                             aria-selected={false}
-                            className="group flex items-center gap-1 hover:bg-[#E8F0FE]"
+                            className="group flex items-center gap-1 hover:bg-[#E8F0FE] !opacity-100"
                           >
                             <button
                               type="button"
@@ -412,10 +412,10 @@ export const HubView: React.FC<HubViewProps> = ({
                               aria-label={isFav ? `Desafixar ${tpl.title}` : `Fixar ${tpl.title}`}
                               aria-pressed={isFav}
                               title={isFav ? 'Remover dos fixados' : 'Fixar no topo'}
-                              className={`pl-3 pr-1.5 py-2.5 shrink-0 ${
+                              className={`pl-3 pr-1.5 py-2.5 shrink-0 !opacity-100 ${
                                 isFav
                                   ? 'text-amber-500 hover:text-amber-600'
-                                  : 'text-slate-300 hover:text-amber-500'
+                                  : 'text-slate-300 dark:text-slate-400 hover:text-amber-500'
                               }`}
                             >
                               <Star
@@ -430,12 +430,14 @@ export const HubView: React.FC<HubViewProps> = ({
                                 setIsGeneralMenuOpen(false);
                                 onOpenGeneralLog(tpl.id);
                               }}
-                              className="flex-1 text-left pr-4 py-2.5 text-sm text-[#1E293B] group-hover:text-[#003865] flex items-center justify-between gap-3 min-w-0"
+                              className="flex-1 text-left pr-4 py-2.5 text-sm text-[#1E293B] dark:text-white group-hover:text-[#003865] dark:group-hover:text-white !opacity-100 flex items-center justify-between gap-3 min-w-0"
                             >
                               <div className="min-w-0">
-                                <span className="font-medium block truncate">{tpl.title}</span>
+                                <span className="font-medium block truncate dark:text-white">
+                                  {tpl.title}
+                                </span>
                                 {(isFav || tpl.isCustom) && (
-                                  <span className="text-[11px] text-slate-500 block">
+                                  <span className="text-[11px] text-slate-500 dark:text-slate-300 block">
                                     {[isFav ? 'Fixado' : null, tpl.isCustom ? 'Personalizado' : null]
                                       .filter(Boolean)
                                       .join(' · ')}
