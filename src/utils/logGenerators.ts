@@ -126,13 +126,18 @@ function clean(value: string): string {
   return value.trim();
 }
 
-function formatValidityLines(state: ArmFormState): string[] {
+function formatValidityLines(state: ArmFormState, now: Date = new Date()): string[] {
   const lines: string[] = [];
   if (state.porData && (clean(state.dataDe) || clean(state.dataAte))) {
     lines.push(`Período: De ${clean(state.dataDe) || '-'} até ${clean(state.dataAte) || '-'}`);
   }
   if (state.emDias && clean(state.dias)) {
     lines.push(`Período: ${clean(state.dias)} dias`);
+    const daysCount = Number.parseInt(clean(state.dias), 10);
+    if (Number.isFinite(daysCount) && daysCount >= 0) {
+      lines.push(`De: ${getDatePlusDays(0, now)}`);
+      lines.push(`Até: ${getDatePlusDays(daysCount, now)}`);
+    }
   }
   if (state.portal) {
     lines.push('Portal: Sim');
@@ -140,7 +145,11 @@ function formatValidityLines(state: ArmFormState): string[] {
   return lines;
 }
 
-function formatArmDetailsBlock(state: ArmFormState, variant: 'anexo' | 'servnow'): string[] {
+function formatArmDetailsBlock(
+  state: ArmFormState,
+  variant: 'anexo' | 'servnow',
+  now: Date = new Date()
+): string[] {
   const lines: string[] = [];
 
   if (state.requestType === 'Delegação de aprovações') {
@@ -184,7 +193,7 @@ function formatArmDetailsBlock(state: ArmFormState, variant: 'anexo' | 'servnow'
     }
   }
 
-  lines.push(...formatValidityLines(state));
+  lines.push(...formatValidityLines(state, now));
   return lines;
 }
 
@@ -236,7 +245,7 @@ export function validateArmForm(
   return missing;
 }
 
-export function generateArmLogAnexo(state: ArmFormState): string {
+export function generateArmLogAnexo(state: ArmFormState, now: Date = new Date()): string {
   const chamado = clean(state.chamado);
   const abertoPor = clean(state.abertoPor);
   const cargoSol = clean(state.cargoSolicitante);
@@ -250,7 +259,7 @@ export function generateArmLogAnexo(state: ArmFormState): string {
   const requesterMeta = [cargoSol, deptSol].filter(Boolean).join(' - ');
   const requesterPart = requesterMeta ? `${abertoPor} (${requesterMeta})` : abertoPor;
 
-  const details = formatArmDetailsBlock(state, 'anexo');
+  const details = formatArmDetailsBlock(state, 'anexo', now);
 
   return [
     'Prezados.',
@@ -262,7 +271,7 @@ export function generateArmLogAnexo(state: ArmFormState): string {
   ].join('\n');
 }
 
-export function generateArmLog(state: ArmFormState): string {
+export function generateArmLog(state: ArmFormState, now: Date = new Date()): string {
   const chamado = clean(state.chamado);
   const colaborador = state.terceiro ? 'Terceiro' : 'Funcionário';
 
@@ -295,7 +304,7 @@ export function generateArmLog(state: ArmFormState): string {
     }
   }
 
-  const validity = formatValidityLines(state);
+  const validity = formatValidityLines(state, now);
   if (validity.length > 0) {
     lines.push(...validity);
   }
@@ -321,7 +330,7 @@ export function generateArmLogServNow(
 
   const requesterMeta = [cargoSol, deptSol].filter(Boolean).join(' - ');
   const requesterPart = requesterMeta ? `${abertoPor} (${requesterMeta})` : abertoPor;
-  const details = formatArmDetailsBlock(state, 'servnow');
+  const details = formatArmDetailsBlock(state, 'servnow', now);
   const aprovador1 = clean(state.aprovador1) || 'NOME';
   const aprovador2 = clean(state.aprovador2) || 'NOME';
   const dataLimite = getDatePlusDays(8, now);
@@ -347,7 +356,11 @@ export function generateArmLogServNow(
   ].join('\n');
 }
 
-export function generateArmLogEncerramento(state: ArmFormState, signature: string): string {
+export function generateArmLogEncerramento(
+  state: ArmFormState,
+  signature: string,
+  now: Date = new Date()
+): string {
   const destinatario = clean(state.abertoPor) || clean(state.nomeCompleto);
   const chamado = clean(state.chamado);
   const usuario =
@@ -395,7 +408,7 @@ export function generateArmLogEncerramento(state: ArmFormState, signature: strin
       lines.push('');
       if (usuario) lines.push(`Usuário SAP: ${usuario}`);
       if (perfilInfo) lines.push(`Perfil/Função: ${perfilInfo}`);
-      const validity = formatValidityLines(state);
+      const validity = formatValidityLines(state, now);
       lines.push(...validity);
     }
   }
