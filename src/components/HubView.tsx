@@ -237,7 +237,7 @@ export const HubView: React.FC<HubViewProps> = ({
             <div className="flex items-baseline justify-between gap-4 pb-3 border-b border-[#E0E4EC]">
               <div>
                 <h2 id="hub-brm-heading" className="text-base font-semibold text-[#003865]">
-                  BRM — Manutenção de Função
+                  BRM — Manutenção de Função.
                 </h2>
                 <p className="text-xs text-slate-500 mt-0.5">
                   Business Role Management · Funções mestre, derivadas e testes.
