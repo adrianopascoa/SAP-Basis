@@ -89,7 +89,7 @@ export const LogConsole: React.FC<LogConsoleProps> = ({
   };
 
   return (
-    <div className="flex flex-col rounded-lg border border-[#1E293B] bg-[#0F172A] text-[#F8FAFC] overflow-hidden">
+    <div className="flex flex-col rounded-lg border border-[#1E293B] bg-[#0F172A] text-[#F8FAFC] overflow-hidden selection:bg-[#0067DF] selection:text-white">
       <div className="flex items-center justify-between gap-3 px-4 py-2.5 border-b border-slate-800 bg-[#0B1120]">
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-xs font-semibold tracking-wide text-slate-200 truncate">

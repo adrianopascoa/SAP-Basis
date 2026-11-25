@@ -149,6 +149,12 @@ html.dark body {
   color: #f1f5f9;
 }
 
+html.dark ::selection,
+html.dark *::selection {
+  background-color: #0067df;
+  color: #ffffff;
+}
+
 .dark .bg-\[\#F4F6F9\] {
   background-color: #090e17;
 }

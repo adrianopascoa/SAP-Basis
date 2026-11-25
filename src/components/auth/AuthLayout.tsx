@@ -10,7 +10,7 @@ interface AuthLayoutProps {
 
 export const AuthLayout: React.FC<AuthLayoutProps> = ({ children, theme, onToggleTheme }) => {
   return (
-    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-slate-50 text-slate-800 antialiased p-4 sm:p-6 lg:p-8 selection:bg-blue-100 selection:text-blue-900">
+    <div className="min-h-screen w-full flex flex-col justify-between items-center bg-slate-50 text-slate-800 antialiased p-4 sm:p-6 lg:p-8 selection:bg-blue-100 selection:text-blue-900 dark:selection:bg-[#0067DF] dark:selection:text-white">
       {/* Barra superior discreta com alternância de tema */}
       <div className="w-full max-w-md flex justify-end shrink-0">
         {theme && onToggleTheme ? <ThemeToggle theme={theme} onToggle={onToggleTheme} /> : null}
