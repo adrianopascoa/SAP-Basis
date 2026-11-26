@@ -140,7 +140,10 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
 
   const handleClear = () => {
     clearDraft(DRAFT_KEYS.ARM_GRC);
-    setForm(DEFAULT_ARM_STATE);
+    setForm((prev) => ({
+      ...DEFAULT_ARM_STATE,
+      requestType: prev.requestType,
+    }));
     setOutput('');
     setLastActionLabel(undefined);
     setMissingFields([]);
@@ -683,9 +686,10 @@ export const ArmGrcView: React.FC<ArmGrcViewProps> = ({
                       <input
                         id="arm-usuario-sap"
                         type="text"
+                        maxLength={12}
                         placeholder="Ex.: USREXEMPLO01"
                         value={form.usuarioSap}
-                        onChange={(e) => updateField('usuarioSap', e.target.value)}
+                        onChange={(e) => updateField('usuarioSap', e.target.value.slice(0, 12))}
                         className={`${inputClass('usuarioSap')} font-mono`}
                       />
                       {hasError('usuarioSap') && (
