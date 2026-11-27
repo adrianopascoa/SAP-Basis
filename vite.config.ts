@@ -5,7 +5,10 @@ import path from 'path';
 import {defineConfig} from 'vite';
 import {VitePWA} from 'vite-plugin-pwa';
 
-const REFERENCED_AISTUDIO_ASSETS = new Set(['SAP_Logo_-_Colored_-_32x32_3644d71f.png']);
+const REFERENCED_AISTUDIO_ASSETS = new Set([
+  'SAP_Logo_-_Colored_-_32x32_3644d71f.png',
+  'Logo5_transparent.png',
+]);
 
 export default defineConfig(() => {
   const rootDir = import.meta.dirname;

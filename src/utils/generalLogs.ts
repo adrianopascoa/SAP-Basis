@@ -88,7 +88,7 @@ export const GENERAL_LOG_TEMPLATES: GeneralLogTemplateMeta[] = [
     hasGreeting: true,
     fields: [
       { key: 'donoPerfil', label: 'Dono(a) do perfil', placeholder: 'Ex.: DONO.EXEMPLO', isMono: true },
-      { key: 'donosRisco', label: 'Donos do risco', placeholder: 'Ex.: RISCO1.EXEMPLO / RISCO2.EXEMPLO' },
+      { key: 'donosRisco', label: 'Donos do risco', placeholder: 'Ex.: RISCO1.EXEMPLO / RISCO2.EXEMPLO', isTextarea: true },
       { key: 'perfil', label: 'Perfil', placeholder: 'Ex.: Z:EXEMPLO_PERFIL_01', isMono: true },
     ],
   },
