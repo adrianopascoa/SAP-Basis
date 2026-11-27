@@ -590,9 +590,9 @@ export default function App() {
             className="inline-flex items-center shrink-0 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0F62FE]"
           >
             <img
-              src="/assets/aistudio/Logo5_transparent.png"
-              alt="SAP Basis"
-              className="h-10 w-10 object-contain"
+              src="/assets/aistudio/SAP_Logo_-_Colored_-_32x32_3644d71f.png"
+              alt="SAP"
+              className="h-8 w-8 object-contain"
             />
           </button>
 
