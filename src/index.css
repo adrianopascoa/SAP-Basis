@@ -92,7 +92,7 @@
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(14px) scale(0.988);
+    transform: translateY(18px) scale(0.985);
   }
   to {
     opacity: 1;
@@ -103,7 +103,7 @@
 @keyframes pageSlideForward {
   from {
     opacity: 0;
-    transform: translateX(28px) scale(0.99);
+    transform: translateX(36px) scale(0.988);
   }
   to {
     opacity: 1;
@@ -114,11 +114,20 @@
 @keyframes pageSlideBackward {
   from {
     opacity: 0;
-    transform: translateX(-28px) scale(0.99);
+    transform: translateX(-36px) scale(0.988);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+@keyframes pageFadeReduced {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
   }
 }
 
@@ -138,17 +147,17 @@
 }
 
 .page-transition-enter {
-  animation: pageEnter 300ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pageEnter 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
 }
 
 .page-transition-forward {
-  animation: pageSlideForward 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pageSlideForward 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
 }
 
 .page-transition-backward {
-  animation: pageSlideBackward 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation: pageSlideBackward 360ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
 }
 
@@ -157,11 +166,12 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 2.5px;
+  height: 3px;
   z-index: 60;
   pointer-events: none;
   transform-origin: left center;
   background: linear-gradient(90deg, #003865 0%, #0f62fe 55%, #38bdf8 100%);
+  box-shadow: 0 0 8px rgba(15, 98, 254, 0.45);
   animation: routeProgressSweep 420ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
@@ -178,12 +188,13 @@
 
   .page-transition-enter,
   .page-transition-forward,
-  .page-transition-backward,
-  .route-progress-bar {
-    animation: none;
+  .page-transition-backward {
+    animation: pageFadeReduced 180ms ease-out both;
+    will-change: opacity;
   }
 
   .route-progress-bar {
+    animation: none;
     display: none;
   }
 }

@@ -271,17 +271,25 @@ export default function App() {
     };
   }, []);
 
+  const activeTransitionRef = useRef<{ route: AppRoute; className: string }>({
+    route,
+    className: 'page-transition-enter',
+  });
+  if (activeTransitionRef.current.route !== route) {
+    const prevOrder = getRouteOrder(activeTransitionRef.current.route);
+    const nextOrder = getRouteOrder(route);
+    const nextClass =
+      prevOrder >= 0 && nextOrder >= 0 && prevOrder !== nextOrder
+        ? nextOrder > prevOrder
+          ? 'page-transition-forward'
+          : 'page-transition-backward'
+        : 'page-transition-enter';
+    activeTransitionRef.current = { route, className: nextClass };
+  }
+  const transitionClass = activeTransitionRef.current.className;
+
   const prevRouteRef = useRef<AppRoute>(route);
   const [showRouteProgress, setShowRouteProgress] = useState(false);
-
-  const prevOrder = getRouteOrder(prevRouteRef.current);
-  const nextOrder = getRouteOrder(route);
-  const transitionClass =
-    prevRouteRef.current !== route && prevOrder >= 0 && nextOrder >= 0 && prevOrder !== nextOrder
-      ? nextOrder > prevOrder
-        ? 'page-transition-forward'
-        : 'page-transition-backward'
-      : 'page-transition-enter';
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -295,6 +303,7 @@ export default function App() {
     if (!session) return;
     const timer = window.setTimeout(() => {
       void import('./components/ArmGrcView');
+      void import('./components/ArmExtraViews');
       void import('./components/BrmView');
       void import('./components/LogsGeraisView');
       void import('./components/HistoryView');
@@ -785,14 +794,14 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div key={route} className={transitionClass}>
-          <Suspense
-            fallback={
-              <div className="bg-white border border-[#E0E4EC] rounded-lg p-10 text-center text-xs text-slate-500">
-                Carregando módulo...
-              </div>
-            }
-          >
+        <Suspense
+          fallback={
+            <div className="bg-white border border-[#E0E4EC] rounded-lg p-10 text-center text-xs text-slate-500">
+              Carregando módulo...
+            </div>
+          }
+        >
+          <div key={route} className={transitionClass}>
             {route === 'hub' && (
               <HubView
                 signature={signature}
@@ -911,8 +920,8 @@ export default function App() {
                 onNotify={notify}
               />
             )}
-          </Suspense>
-        </div>
+          </div>
+        </Suspense>
       </main>
 
       {isSignatureModalOpen && (
