@@ -82,33 +82,35 @@ export const AuthFlow: React.FC<AuthFlowProps> = ({
 
   return (
     <AuthLayout theme={theme} onToggleTheme={onToggleTheme}>
-      {currentRoute === 'login' && (
-        <LoginView onNavigate={onNavigate} onLoginSuccess={handleLoginSuccess} />
-      )}
+      <div key={currentRoute} className="w-full page-transition-enter">
+        {currentRoute === 'login' && (
+          <LoginView onNavigate={onNavigate} onLoginSuccess={handleLoginSuccess} />
+        )}
 
-      {currentRoute === 'cadastro' && (
-        <RegisterView onNavigate={onNavigate} onRegisterSuccess={handleRegisterSuccess} />
-      )}
+        {currentRoute === 'cadastro' && (
+          <RegisterView onNavigate={onNavigate} onRegisterSuccess={handleRegisterSuccess} />
+        )}
 
-      {currentRoute === 'recuperar-senha' && (
-        <ForgotPasswordView
-          initialEmail={recoveryEmail}
-          onNavigate={onNavigate}
-          onRequestResetSuccess={handleRequestResetSuccess}
-        />
-      )}
+        {currentRoute === 'recuperar-senha' && (
+          <ForgotPasswordView
+            initialEmail={recoveryEmail}
+            onNavigate={onNavigate}
+            onRequestResetSuccess={handleRequestResetSuccess}
+          />
+        )}
 
-      {currentRoute === 'email-enviado' && (
-        <EmailSentView
-          recoveryEmail={recoveryEmail}
-          onNavigate={onNavigate}
-          onResendLink={handleResendLink}
-        />
-      )}
+        {currentRoute === 'email-enviado' && (
+          <EmailSentView
+            recoveryEmail={recoveryEmail}
+            onNavigate={onNavigate}
+            onResendLink={handleResendLink}
+          />
+        )}
 
-      {currentRoute === 'redefinir-senha' && (
-        <ResetPasswordView onNavigate={onNavigate} onResetSuccess={handleResetSuccess} />
-      )}
+        {currentRoute === 'redefinir-senha' && (
+          <ResetPasswordView onNavigate={onNavigate} onResetSuccess={handleResetSuccess} />
+        )}
+      </div>
     </AuthLayout>
   );
 };

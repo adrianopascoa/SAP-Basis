@@ -1,4 +1,4 @@
-import { Suspense, lazy, useCallback, useEffect, useState } from 'react';
+import { Suspense, lazy, useCallback, useEffect, useRef, useState } from 'react';
 import { ExternalLink, LogOut } from 'lucide-react';
 import type { Session } from '@supabase/supabase-js';
 import { supabase } from './lib/supabase';
@@ -74,6 +74,16 @@ function isAuthRoute(r: AppRoute): boolean {
     r === 'email-enviado' ||
     r === 'redefinir-senha'
   );
+}
+
+function getRouteOrder(r: AppRoute): number {
+  if (r === 'hub') return 0;
+  if (r === 'arm-grc' || r === 'arm-legados' || r === 'arm-multiplo' || r === 'arm-encerramento')
+    return 1;
+  if (r === 'brm-manutencao' || r === 'brm-legados' || r === 'brm-encerramento') return 2;
+  if (r === 'logs-gerais') return 3;
+  if (r === 'historico') return 4;
+  return -1;
 }
 
 function parseRouteFromLocation(
@@ -261,9 +271,36 @@ export default function App() {
     };
   }, []);
 
+  const prevRouteRef = useRef<AppRoute>(route);
+  const [showRouteProgress, setShowRouteProgress] = useState(false);
+
+  const prevOrder = getRouteOrder(prevRouteRef.current);
+  const nextOrder = getRouteOrder(route);
+  const transitionClass =
+    prevRouteRef.current !== route && prevOrder >= 0 && nextOrder >= 0 && prevOrder !== nextOrder
+      ? nextOrder > prevOrder
+        ? 'page-transition-forward'
+        : 'page-transition-backward'
+      : 'page-transition-enter';
+
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (prevRouteRef.current !== route) {
+      prevRouteRef.current = route;
+      setShowRouteProgress(true);
+    }
   }, [route]);
+
+  useEffect(() => {
+    if (!session) return;
+    const timer = window.setTimeout(() => {
+      void import('./components/ArmGrcView');
+      void import('./components/BrmView');
+      void import('./components/LogsGeraisView');
+      void import('./components/HistoryView');
+    }, 500);
+    return () => window.clearTimeout(timer);
+  }, [session]);
 
   useEffect(() => {
     if (authLoading) return;
@@ -578,7 +615,15 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-[#1E293B]">
+    <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-[#1E293B] overflow-x-clip">
+      {showRouteProgress && (
+        <div
+          key={`progress-${route}`}
+          className="route-progress-bar"
+          aria-hidden="true"
+          onAnimationEnd={() => setShowRouteProgress(false)}
+        />
+      )}
       {/* Top Bar Contract: 1 row, 3 zones separated by gap-8 */}
       <header className="md:sticky md:top-0 z-30 bg-white border-b border-[#E0E4EC]">
         <div className="max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between gap-3 md:gap-6 lg:gap-8">
@@ -740,7 +785,7 @@ export default function App() {
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-[1600px] mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        <div key={route} className="page-transition-enter">
+        <div key={route} className={transitionClass}>
           <Suspense
             fallback={
               <div className="bg-white border border-[#E0E4EC] rounded-lg p-10 text-center text-xs text-slate-500">
