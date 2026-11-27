@@ -289,15 +289,23 @@ export default function App() {
   const transitionClass = activeTransitionRef.current.className;
 
   const prevRouteRef = useRef<AppRoute>(route);
+  const [progressKey, setProgressKey] = useState(0);
   const [showRouteProgress, setShowRouteProgress] = useState(false);
 
   useEffect(() => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
     if (prevRouteRef.current !== route) {
       prevRouteRef.current = route;
+      setProgressKey((k) => k + 1);
       setShowRouteProgress(true);
     }
   }, [route]);
+
+  useEffect(() => {
+    if (!showRouteProgress) return;
+    const timer = window.setTimeout(() => setShowRouteProgress(false), 700);
+    return () => window.clearTimeout(timer);
+  }, [showRouteProgress, progressKey]);
 
   useEffect(() => {
     if (!session) return;
@@ -627,7 +635,7 @@ export default function App() {
     <div className="min-h-screen flex flex-col bg-[#F4F6F9] text-[#1E293B] overflow-x-clip">
       {showRouteProgress && (
         <div
-          key={`progress-${route}`}
+          key={`progress-${progressKey}`}
           className="route-progress-bar"
           aria-hidden="true"
           onAnimationEnd={() => setShowRouteProgress(false)}
